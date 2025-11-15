@@ -58,13 +58,6 @@ set_error_handler(function ($severity, $message, $file, $line) {
 
 ini_set('memory_limit', '256M');
 
-// Create tables if they don't exist
-$database = new Database();
-$db = $database->getConnection();
-Student::createTable($db);
-Course::createTable($db);
-Enrollment::createTable($db);
-
 $UserRoutes = require_once __DIR__ . '/UserRoutes.php';
 $StudentRoutes = require_once __DIR__ . '/StudentRoutes.php';
 $CourseRoutes = require_once __DIR__ . '/CourseRoutes.php';
