@@ -4,10 +4,17 @@ require_once __DIR__ . '/../models/User.php';
 
 class Database
 {
-    private $host = 'localhost';
-    private $db_name = 'student_lms';
-    private $username = 'root';
-    private $password = '';
+    // private $host = 'localhost';
+    // private $db_name = 'student_lms';
+    // private $username = 'root';
+    // private $password = '';
+    // private $conn;
+
+
+    private $host = '91.204.209.19';
+    private $db_name = 'payshiac_student_lms';
+    private $username = 'payshiac_student_lms';
+    private $password = '[]M.ujKl{b-a{ASr';
     private $conn;
 
     public function connect()
