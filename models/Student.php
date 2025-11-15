@@ -36,7 +36,7 @@ class Student
             $db->exec($sql);
             return true;
         } catch (PDOException $e) {
-            echo 'Connection Error: ' . $e->getMessage();
+            error_log('Connection Error: ' . $e->getMessage());
             return false;
         }
     }
@@ -47,9 +47,8 @@ class Student
 
         try {
             $db->exec($query);
-            echo "Table 'students' dropped successfully." . PHP_EOL;
         } catch (PDOException $e) {
-            echo "Error dropping table 'students': " . $e->getMessage() . PHP_EOL;
+            error_log("Error dropping table 'students': " . $e->getMessage());
         }
     }
 }

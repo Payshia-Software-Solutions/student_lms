@@ -29,26 +29,14 @@ class Database
             $this->conn = new PDO('mysql:host=' . $this->host . ';dbname=' . $this->db_name, $this->username, $this->password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            // Drop tables in reverse order of creation
-            Student::dropTable($this->conn);
-            City::dropTable($this->conn);
-            District::dropTable($this->conn);
-            Province::dropTable($this->conn);
-
-            // Create tables
-            User::createTable($this->conn);
-            Province::createTable($this->conn);
-            District::createTable($this->conn);
-            City::createTable($this->conn);
-            Student::createTable($this->conn);
-
-            // Seed tables
-            Province::seed($this->conn);
-            District::seed($this->conn);
-            City::seed($this->conn);
+            // One-time setup logic can be placed here, controlled by a flag or configuration.
+            // For example, you could check if a certain table exists before running setup.
 
         } catch (PDOException $e) {
-            echo 'Connection Error: ' . $e->getMessage();
+            // Use error_log for production environments
+            error_log('Connection Error: ' . $e->getMessage());
+            // Optionally, you can have a more user-friendly error message.
+            // die("Database connection failed. Please try again later.");
         }
 
         return $this->conn;
