@@ -16,20 +16,20 @@ class StudentController
         $data = json_decode(file_get_contents('php://input'), true);
 
         // Validate input data
-        if (empty($data['username']) || empty($data['firstname']) || empty($data['lastname']) || empty($data['phone_number'])) {
+        if (empty($data['username']) || empty($data['first_name']) || empty($data['last_name']) || empty($data['phone_number'])) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
             return;
         }
 
         try {
-            $query = "INSERT INTO students (username, firstname, lastname, date_of_birth, gender, parent_name, phone_number, parent_phone_number, address, city_id, nic, profile_image_url) VALUES (:username, :firstname, :lastname, :date_of_birth, :gender, :parent_name, :phone_number, :parent_phone_number, :address, :city_id, :nic, :profile_image_url)";
+            $query = "INSERT INTO students (username, first_name, last_name, date_of_birth, gender, parent_name, phone_number, parent_phone_number, address, city_id, nic, profile_image_url) VALUES (:username, :first_name, :last_name, :date_of_birth, :gender, :parent_name, :phone_number, :parent_phone_number, :address, :city_id, :nic, :profile_image_url)";
             $stmt = $this->db->prepare($query);
 
             // Bind parameters
             $stmt->bindValue(':username', $data['username']);
-            $stmt->bindValue(':firstname', $data['firstname']);
-            $stmt->bindValue(':lastname', $data['lastname']);
+            $stmt->bindValue(':first_name', $data['first_name']);
+            $stmt->bindValue(':last_name', $data['last_name']);
             $stmt->bindValue(':phone_number', $data['phone_number']);
             $stmt->bindValue(':date_of_birth', $data['date_of_birth'] ?? null);
             $stmt->bindValue(':gender', $data['gender'] ?? null);
