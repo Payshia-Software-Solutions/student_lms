@@ -21,25 +21,13 @@ class Enrollment
     // Create table
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS enrollments (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            student_id INT NOT NULL,
-            course_id INT NOT NULL,
-            enrollment_date DATE,
-            grade VARCHAR(2),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP NULL,
-            FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-        );";
+        $query = "CREATE TABLE IF NOT EXISTS enrollments (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            student_id INT NOT NULL,\n            course_id INT NOT NULL,\n            enrollment_date DATE,\n            grade VARCHAR(2),\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL,\n            FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,\n            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE\n        );";
 
         try {
             $stmt = $db->prepare($query);
             $stmt->execute();
         } catch (PDOException $e) {
-            // Handle table creation error
-            echo "Table Creation Error: " . $e->getMessage();
+            error_log("Table Creation Error: " . $e->getMessage());
         }
     }
 }

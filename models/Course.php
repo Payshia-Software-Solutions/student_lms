@@ -20,23 +20,13 @@ class Course
     // Create table
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS courses (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            course_name VARCHAR(255) NOT NULL,
-            description TEXT,
-            credits INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP NULL
-        );";
+        $query = "CREATE TABLE IF NOT EXISTS courses (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            course_name VARCHAR(255) NOT NULL,\n            description TEXT,\n            credits INT NOT NULL,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL\n        );";
 
         try {
             $stmt = $db->prepare($query);
             $stmt->execute();
         } catch (PDOException $e) {
-            // Handle table creation error
-            // For now, we'll just print the error
-            echo "Table Creation Error: " . $e->getMessage();
+            error_log("Table Creation Error: " . $e->getMessage());
         }
     }
 }

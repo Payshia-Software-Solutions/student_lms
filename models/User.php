@@ -28,9 +28,8 @@ class User
                 )
             ";
             $pdo->exec($sql);
-            return "Table 'users' created successfully or already exists.";
         } catch (PDOException $e) {
-            return "Error creating table: " . $e->getMessage();
+            error_log("Error creating table: " . $e->getMessage());
         }
     }
 
@@ -50,10 +49,7 @@ class User
 
     public function create($data)
     {
-        $stmt = $this->pdo->prepare("
-            INSERT INTO users (f_name, l_name, email, password, nic, created_by)
-            VALUES (:f_name, :l_name, :email, :password, :nic, :created_by)
-        ");
+        $stmt = $this->pdo->prepare("\n            INSERT INTO users (f_name, l_name, email, password, nic, created_by)\n            VALUES (:f_name, :l_name, :email, :password, :nic, :created_by)\n        ");
 
         $password = password_hash($data['password'], PASSWORD_BCRYPT);
         
