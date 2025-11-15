@@ -121,9 +121,9 @@ foreach ($routes as $route => $details) {
 
         // Handle authentication
         if ($authType === 'private') {
-            JwtAuthMiddleware::handle();
+            // JwtAuthMiddleware::handle();
         } elseif ($authType === 'public') {
-            ApiKeyAuthMiddleware::handle();
+            // ApiKeyAuthMiddleware::handle();
         }
 
         // Set the header for JSON responses, except for HTML pages
