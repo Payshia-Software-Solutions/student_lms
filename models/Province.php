@@ -8,42 +8,40 @@ class Province
 
         try {
             $db->exec($query);
+            echo "Table 'provinces' created successfully." . PHP_EOL;
         } catch (PDOException $e) {
-            error_log("Error creating table 'provinces': " . $e->getMessage());
+            echo "Error creating table 'provinces': " . $e->getMessage() . PHP_EOL;
         }
     }
 
     public static function seed($db)
     {
-        try {
-            $query = "SELECT COUNT(*) FROM provinces";
+        $query = "SELECT COUNT(*) FROM provinces";
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        $count = $stmt->fetchColumn();
+
+        if ($count == 0) {
+            $provinces = [
+                ['name' => 'Central Province'],
+                ['name' => 'Eastern Province'],
+                ['name' => 'North Central Province'],
+                ['name' => 'Northern Province'],
+                ['name' => 'North Western Province'],
+                ['name' => 'Sabaragamuwa Province'],
+                ['name' => 'Southern Province'],
+                ['name' => 'Uva Province'],
+                ['name' => 'Western Province'],
+            ];
+
+            $query = "INSERT INTO provinces (name) VALUES (:name)";
             $stmt = $db->prepare($query);
-            $stmt->execute();
-            $count = $stmt->fetchColumn();
 
-            if ($count == 0) {
-                $provinces = [
-                    ['name' => 'Central Province'],
-                    ['name' => 'Eastern Province'],
-                    ['name' => 'North Central Province'],
-                    ['name' => 'Northern Province'],
-                    ['name' => 'North Western Province'],
-                    ['name' => 'Sabaragamuwa Province'],
-                    ['name' => 'Southern Province'],
-                    ['name' => 'Uva Province'],
-                    ['name' => 'Western Province'],
-                ];
-
-                $query = "INSERT INTO provinces (name) VALUES (:name)";
-                $stmt = $db->prepare($query);
-
-                foreach ($provinces as $province) {
-                    $stmt->bindValue(':name', $province['name']);
-                    $stmt->execute();
-                }
+            foreach ($provinces as $province) {
+                $stmt->bindValue(':name', $province['name']);
+                $stmt->execute();
             }
-        } catch (PDOException $e) {
-            error_log("Error seeding 'provinces' table: " . $e->getMessage());
+            echo "Seeded 'provinces' table." . PHP_EOL;
         }
     }
 
@@ -53,8 +51,9 @@ class Province
 
         try {
             $db->exec($query);
+            echo "Table 'provinces' dropped successfully." . PHP_EOL;
         } catch (PDOException $e) {
-            error_log("Error dropping table 'provinces': " . $e->getMessage());
+            echo "Error dropping table 'provinces': " . $e->getMessage() . PHP_EOL;
         }
     }
 }

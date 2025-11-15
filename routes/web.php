@@ -7,9 +7,6 @@ require_once __DIR__ . '/../middleware/ApiKeyAuthMiddleware.php';
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Enrollment.php';
-require_once __DIR__ . '/../models/Province.php';
-require_once __DIR__ . '/../models/District.php';
-require_once __DIR__ . '/../models/City.php';
 
 CORSMiddleware::handle();
 
@@ -67,9 +64,6 @@ $db = $database->getConnection();
 Student::createTable($db);
 Course::createTable($db);
 Enrollment::createTable($db);
-Province::createTable($db);
-District::createTable($db);
-City::createTable($db);
 
 $UserRoutes = require_once __DIR__ . '/UserRoutes.php';
 $StudentRoutes = require_once __DIR__ . '/StudentRoutes.php';
