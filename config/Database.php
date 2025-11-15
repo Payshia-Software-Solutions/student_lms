@@ -1,6 +1,10 @@
 <?php
 
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Province.php';
+require_once __DIR__ . '/../models/District.php';
+require_once __DIR__ . '/../models/City.php';
+require_once __DIR__ . '/../models/Student.php';
 
 class Database
 {
@@ -25,8 +29,23 @@ class Database
             $this->conn = new PDO('mysql:host=' . $this->host . ';dbname=' . $this->db_name, $this->username, $this->password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            // Automatically create the users table if it doesn't exist
+            // Drop tables in reverse order of creation
+            Student::dropTable($this->conn);
+            City::dropTable($this->conn);
+            District::dropTable($this->conn);
+            Province::dropTable($this->conn);
+
+            // Create tables
             User::createTable($this->conn);
+            Province::createTable($this->conn);
+            District::createTable($this->conn);
+            City::createTable($this->conn);
+            Student::createTable($this->conn);
+
+            // Seed tables
+            Province::seed($this->conn);
+            District::seed($this->conn);
+            City::seed($this->conn);
 
         } catch (PDOException $e) {
             echo 'Connection Error: ' . $e->getMessage();
