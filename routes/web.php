@@ -1,116 +1,111 @@
 <?php
-// Set CORS headers for every response
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-// Handle OPTIONS requests (preflight)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit();
-}
+// web.php
+
+require_once __DIR__ . '/../middleware/CORSMiddleware.php';
+require_once __DIR__ . '/../middleware/JwtAuthMiddleware.php';
+require_once __DIR__ . '/../middleware/ApiKeyAuthMiddleware.php';
+
+CORSMiddleware::handle();
+
+// --- Error and Exception Handling ---
+
+// Don't display errors to the user in production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/error.log');
+
+// Set a custom exception handler
+set_exception_handler(function ($exception) {
+    // Log the error
+    error_log(
+        "Uncaught Exception: " . $exception->getMessage() . 
+        " in " . $exception->getFile() . 
+        " on line " . $exception->getLine()
+    );
+
+    // Send a generic error response
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'An internal server error occurred.'
+    ]);
+    exit;
+});
+
+// Set a custom error handler for notices, warnings, etc.
+set_error_handler(function ($severity, $message, $file, $line) {
+    if (!(error_reporting() & $severity)) {
+        // This error code is not included in error_reporting
+        return;
+    }
+    // Log the error
+    error_log(
+        "Error: [$severity] $message in $file on line $line"
+    );
+
+    // Continue with the standard PHP error handler if display_errors is on
+    // But since we turned it off, this effectively just logs the error.
+    return false; // Let PHP's internal error handler also run (which will log it)
+});
+
+
+// --- End of Error Handling ---
 
 
 ini_set('memory_limit', '256M');
-// Report all PHP errors
-error_reporting(E_ALL);
-// Display errors in the browser (for development)
-ini_set('display_errors', 1);
-
-// JWT Middleware
-require_once __DIR__ . '/../utils/JwtHelper.php';
-$publicRoutes = [
-   
-
-];
-$requestMethod = $_SERVER['REQUEST_METHOD'];
-$requestUri = $_SERVER['REQUEST_URI'];
-// Remove query string for route matching
-if (strpos($requestUri, '?') !== false) {
-    $requestUri = strtok($requestUri, '?');
-}
-// Normalize route for matching (allow /erp_server/users/login and /users/login)
-$normalizedRoute = $requestMethod . ' ' . preg_replace('#^/erp_server#', '', $requestUri);
-if (!in_array($normalizedRoute, $publicRoutes)) {
-    $headers = getallheaders();
-    $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : null;
-    if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-        http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Missing or invalid Authorization header']);
-        exit();
-    }
-    $token = $matches[1];
-    $jwtPayload = JwtHelper::validateToken($token);
-    if (!$jwtPayload) {
-        http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired token']);
-        exit();
-    }
-    // Optionally, set $jwtPayload to global for use in controllers
-    $GLOBALS['jwtPayload'] = $jwtPayload;
-}
 
 $UserRoutes = require_once __DIR__ . '/UserRoutes.php';
 
-
 // Combine all routes
 $routes = array_merge(
-    $UserRoutes
-
- 
+    $UserRoutes,
+    [
+        'GET /ping/' => [
+            'handler' => function () {
+                echo json_encode(['status' => 'success', 'message' => 'pong']);
+            },
+            'auth' => 'public'
+        ]
+    ]
 );
 
 // Define the home route with trailing slash
-$routes['GET /'] = function () {
-    // Serve the index.html file
-    readfile('../views/index.html');
-};
+$routes['GET /'] = [
+    'handler' => function () {
+        // Serve the index.html file
+        readfile('../views/index.html');
+    },
+    'auth' => 'none' // No authentication needed
+];
 
 // Get request method and URI
 $method = $_SERVER['REQUEST_METHOD'];
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);  // Get only the path, not query parameters
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Ensure URI always has a trailing slash
-if (substr($uri, -1) !== '/') {
-    // $uri .= '/';
-}
-
-// Determine if the application is running on localhost
-if ($_SERVER['HTTP_HOST'] === 'localhost') {
-    // Adjust URI if needed (only on localhost)
-    $uri = str_replace('lms_server/', '', $uri);
-} else {
-    // Adjust URI if needed (if using a subdirectory)
-    $uri = $uri;
-}
-
-// Set the header for JSON responses, except for HTML pages
-if ($uri !== '/') {
-    header('Content-Type: application/json');
-}
-
-// Debugging
-error_log("Method: $method");
-error_log("URI: $uri");
-
-// Define a generic regex pattern for routes with placeholders like {id}, {username}, etc.
-$routeRegexPattern = "#\{[a-zA-Z0-9_]+\}#"; // Matches anything inside {}
-
-// Route matching
-foreach ($routes as $route => $handler) {
+// Route matching and authentication
+foreach ($routes as $route => $details) {
     list($routeMethod, $routeUri) = explode(' ', $route, 2);
+    $handler = $details['handler'];
+    $authType = $details['auth'];
 
-    // Replace all placeholders like {id}, {username}, etc. with a generic regex that matches alphanumeric strings
-    $routeRegex = preg_replace($routeRegexPattern, '([a-zA-Z0-9_\-]+)', $routeUri);
-    $routeRegex = "#^" . rtrim($routeRegex, '/') . "/?$#";
+    $routeRegex = "#^" . preg_replace('#\\{[a-zA-Z0-9_]+\\}#', '([a-zA-Z0-9_\\-]+)', rtrim($routeUri, '/')) . "/?$#";
 
-    error_log("Checking route: $routeRegex");
-
-    // Check if the route matches the request
     if ($method === $routeMethod && preg_match($routeRegex, $uri, $matches)) {
         array_shift($matches); // Remove the full match
-        error_log("Route matched: $route");
 
-        // Call the route handler with dynamic parameters
+        // Handle authentication
+        if ($authType === 'private') {
+            JwtAuthMiddleware::handle();
+        } elseif ($authType === 'public') {
+            ApiKeyAuthMiddleware::handle();
+        }
+
+        // Set the header for JSON responses, except for HTML pages
+        if ($uri !== '/') {
+            header('Content-Type: application/json');
+        }
+
         call_user_func_array($handler, $matches);
         exit;
     }

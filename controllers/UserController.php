@@ -1,50 +1,86 @@
 <?php
 
-require_once './models/User.php';
+require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../utils/JwtHelper.php';
 
 class UserController
 {
-    private $userModel;
+    private $user;
 
     public function __construct($pdo)
     {
-        $this->userModel = new User($pdo);
+        $this->user = new User($pdo);
     }
 
-    // Get all users
     public function getAllRecords()
     {
-        echo json_encode($this->userModel->getAll());
+        $users = $this->user->getAll();
+        echo json_encode(['status' => 'success', 'data' => $users]);
     }
 
-    // Get by ID
     public function getRecordById($id)
     {
-        echo json_encode($this->userModel->getById($id));
+        $user = $this->user->getById($id);
+        if ($user) {
+            echo json_encode(['status' => 'success', 'data' => $user]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'User not found']);
+        }
     }
 
-    // Create a user
     public function createRecord()
     {
         $data = json_decode(file_get_contents('php://input'), true);
-
-        $result = $this->userModel->create($data);
-        echo json_encode(['success' => $result]);
+        
+        if ($this->user->create($data)) {
+            http_response_code(201);
+            echo json_encode(['status' => 'success', 'message' => 'User created successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create user']);
+        }
     }
 
-    // Update user
     public function updateRecord($id)
     {
         $data = json_decode(file_get_contents('php://input'), true);
-
-        $result = $this->userModel->update($id, $data);
-        echo json_encode(['success' => $result]);
+        
+        if ($this->user->update($id, $data)) {
+            echo json_encode(['status' => 'success', 'message' => 'User updated successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to update user']);
+        }
     }
 
-    // Delete user
     public function deleteRecord($id)
     {
-        $result = $this->userModel->delete($id);
-        echo json_encode(['success' => $result]);
+        if ($this->user->delete($id)) {
+            echo json_encode(['status' => 'success', 'message' => 'User deleted successfully (soft delete)']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to delete user']);
+        }
+    }
+
+    public function login()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $email = $data['email'];
+        $password = $data['password'];
+
+        $user = $this->user->findByEmail($email);
+
+        if ($user && password_verify($password, $user['password'])) {
+            $token = JwtHelper::generateToken([
+                'id' => $user['id'],
+                'email' => $user['email']
+            ]);
+            echo json_encode(['status' => 'success', 'token' => $token]);
+        } else {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid credentials']);
+        }
     }
 }
