@@ -5,7 +5,7 @@ require_once __DIR__ . '/../models/User.php';
 class Database
 {
     private $host = 'localhost';
-    private $db_name = 'lms';
+    private $db_name = 'student_lms';
     private $username = 'root';
     private $password = '';
     private $conn;

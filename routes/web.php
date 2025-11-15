@@ -83,6 +83,13 @@ $routes['GET /'] = [
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// If the application is in a subdirectory named 'student_lms', remove it from the URI
+$basePath = '/student_lms';
+if (substr($uri, 0, strlen($basePath)) === $basePath) {
+    $uri = substr($uri, strlen($basePath));
+}
+
+
 // Route matching and authentication
 foreach ($routes as $route => $details) {
     list($routeMethod, $routeUri) = explode(' ', $route, 2);

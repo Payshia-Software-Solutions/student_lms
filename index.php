@@ -1,4 +1,4 @@
 <?php
 // index.php
-require_once 'config/database.php';
-require_once 'routes/web.php';
+require_once __DIR__ . '/config/Database.php';
+require_once __DIR__ . '/routes/web.php';

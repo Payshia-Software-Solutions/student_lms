@@ -1,6 +1,6 @@
 <?php
 
-require_once './controllers/UserController.php';
+require_once __DIR__ . '/../controllers/UserController.php';
 
 $pdo = $GLOBALS['pdo'];
 $userController = new UserController($pdo);
