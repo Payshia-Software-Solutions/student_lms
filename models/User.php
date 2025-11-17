@@ -97,32 +97,22 @@ class User
         $stmt = $this->pdo->prepare("UPDATE users SET is_active = 0 WHERE id = ?");
         return $stmt->execute([$id]);
     }
-   
 
-    // Add this method to your User.php model class
-
-public function getByEmail($email)
-{
-    $stmt = $this->pdo->prepare("SELECT id, f_name, l_name, email, password, nic, is_active, created_at FROM users WHERE email = ? AND is_active = 1");
-    $stmt->execute([$email]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-public function login($email, $password)
-{
-    $user = $this->getByEmail($email);
-    
-    if (!$user) {
-        return false; // User not found
+    public function findByEmail($email)
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1");
+        $stmt->execute([$email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
-    // Verify password using password_verify
-    if (password_verify($password, $user['password'])) {
-        // Remove password from returned data
-        unset($user['password']);
-        return $user;
+
+    public function login($email, $password)
+    {
+        $user = $this->findByEmail($email);
+
+        if ($user && password_verify($password, $user['password'])) {
+            return $user;
+        }
+
+        return false;
     }
-    
-    return false; // Invalid password
-}
 }
