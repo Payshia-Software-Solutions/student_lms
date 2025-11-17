@@ -6,6 +6,14 @@ $pdo = $GLOBALS['pdo'];
 $userController = new UserController($pdo);
 
 return [
+    // User Login - No Auth
+    'POST /login/' => [
+        'handler' => function () use ($userController) {
+            $userController->login();
+        },
+        'auth' => 'none'
+    ],
+
     // Get all users - Private (JWT)
     'GET /users/' => [
         'handler' => function () use ($userController) {
@@ -46,11 +54,4 @@ return [
         'auth' => 'private'
     ],
 
-    // Login user - No Auth
-    'POST /login/' => [
-        'handler' => function () use ($userController) {
-            $userController->login();
-        },
-        'auth' => 'none'
-    ]
 ];

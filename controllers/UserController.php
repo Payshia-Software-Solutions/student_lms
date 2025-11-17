@@ -64,23 +64,40 @@ class UserController
         }
     }
 
-    public function login()
-    {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $email = $data['email'];
-        $password = $data['password'];
+  // Add this method to your UserController.php class
 
-        $user = $this->user->findByEmail($email);
-
-        if ($user && password_verify($password, $user['password'])) {
-            $token = JwtHelper::generateToken([
-                'id' => $user['id'],
-                'email' => $user['email']
-            ]);
-            echo json_encode(['status' => 'success', 'token' => $token]);
-        } else {
-            http_response_code(401);
-            echo json_encode(['status' => 'error', 'message' => 'Invalid credentials']);
-        }
+public function login()
+{
+    $data = json_decode(file_get_contents('php://input'), true);
+    
+    // Validate input
+    if (!isset($data['email']) || !isset($data['password'])) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Email and password are required']);
+        return;
     }
+    
+    $user = $this->user->login($data['email'], $data['password']);
+    
+    if ($user) {
+        // Generate JWT token
+        $token = JwtHelper::generateToken([
+            'id' => $user['id'],
+            'email' => $user['email'],
+            'f_name' => $user['f_name'],
+            'l_name' => $user['l_name']
+        ]);
+        
+        http_response_code(200);
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Login successful',
+            'token' => $token,
+            'user' => $user
+        ]);
+    } else {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid email or password']);
+    }
+}
 }
