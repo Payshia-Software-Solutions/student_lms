@@ -4,186 +4,105 @@ require_once __DIR__ . '/../models/Course.php';
 
 class CourseController
 {
+    private $course;
     private $db;
 
-    public function __construct($db)
+    public function __construct($pdo)
     {
-        $this->db = $db;
+        $this->db = $pdo;
+        $this->course = new Course($pdo);
     }
 
-    public function createRecord()
+    public function createCourse()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = json_decode(file_get_contents("php://input"), true);
 
-        // Validate input data
-        if (empty($data['course_name']) || !isset($data['credits'])) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Missing required fields: course_name and credits']);
-            return;
-        }
-
-        try {
-            $query = "INSERT INTO courses (course_name, description, credits) VALUES (:course_name, :description, :credits)";
-            $stmt = $this->db->prepare($query);
-
-            // Bind parameters
-            $stmt->bindValue(':course_name', $data['course_name']);
-            $stmt->bindValue(':description', $data['description'] ?? null);
-            $stmt->bindValue(':credits', $data['credits'], PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                http_response_code(201);
-                echo json_encode(['status' => 'success', 'message' => 'Course created successfully.']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to create course.']);
-            }
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        if ($this->course->create($data)) {
+            http_response_code(201);
+            echo json_encode(array("message" => "Course was created."));
+        } else {
+            http_response_code(503);
+            echo json_encode(array("message" => "Unable to create course."));
         }
     }
 
-    public function getAllRecords()
+    public function getCourses()
     {
-        try {
-            $query = "SELECT * FROM courses WHERE deleted_at IS NULL";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute();
-            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['status' => 'success', 'data' => $courses]);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        $stmt = $this->course->getAll();
+        $num = $stmt->rowCount();
+
+        if ($num > 0) {
+            $courses_arr = array();
+            $courses_arr["records"] = array();
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                extract($row);
+                $course_item = array(
+                    "id" => $id,
+                    "course_name" => $course_name,
+                    "course_code" => $course_code,
+                    "description" => $description,
+                    "credits" => $credits,
+                    "payment_status" => $payment_status
+                );
+                array_push($courses_arr["records"], $course_item);
+            }
+
+            http_response_code(200);
+            echo json_encode($courses_arr);
+        } else {
+            http_response_code(404);
+            echo json_encode(array("message" => "No courses found."));
         }
     }
 
-    public function getRecordById($id)
+    public function getCourse($id)
     {
-        try {
-            $query = "SELECT * FROM courses WHERE id = :id AND deleted_at IS NULL";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $course = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($course) {
-                echo json_encode(['status' => 'success', 'data' => $course]);
-            } else {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'Course not found.']);
-            }
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        if ($this->course->getById($id)) {
+            $course_item = array(
+                "id" => $this->course->id,
+                "course_name" => $this->course->course_name,
+                "course_code" => $this->course->course_code,
+                "description" => $this->course->description,
+                "credits" => $this->course->credits,
+                "payment_status" => $this->course->payment_status
+            );
+            http_response_code(200);
+            echo json_encode($course_item);
+        } else {
+            http_response_code(404);
+            echo json_encode(array("message" => "Course not found."));
         }
     }
 
-    public function updateRecord($id)
+    public function updateCourse($id)
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = json_decode(file_get_contents("php://input"), true);
+        $data['id'] = $id;
 
-        if (empty($data)) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'No data provided for update.']);
-            return;
-        }
-
-        try {
-            $query = "UPDATE courses SET ";
-            $fields = [];
-            foreach ($data as $key => $value) {
-                $fields[] = "$key = :$key";
-            }
-            $query .= implode(', ', $fields);
-            $query .= " WHERE id = :id";
-
-            $stmt = $this->db->prepare($query);
-
-            foreach ($data as $key => $value) {
-                $stmt->bindValue(':' . $key, $value);
-            }
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                if ($stmt->rowCount() > 0) {
-                    echo json_encode(['status' => 'success', 'message' => 'Course updated successfully.']);
-                } else {
-                    http_response_code(404);
-                    echo json_encode(['status' => 'error', 'message' => 'Course not found or no changes made.']);
-                }
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to update course.']);
-            }
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        if ($this->course->update($data)) {
+            http_response_code(200);
+            echo json_encode(array("message" => "Course was updated."));
+        } else {
+            http_response_code(503);
+            echo json_encode(array("message" => "Unable to update course."));
         }
     }
 
-    public function deleteRecord($id)
+    public function deleteCourse($id)
     {
-        try {
-            $query = "UPDATE courses SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id AND deleted_at IS NULL";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                if ($stmt->rowCount() > 0) {
-                    echo json_encode(['status' => 'success', 'message' => 'Course deleted successfully.']);
-                } else {
-                    http_response_code(404);
-                    echo json_encode(['status' => 'error', 'message' => 'Course not found or already deleted.']);
-                }
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to delete course.']);
-            }
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        if ($this->course->delete($id)) {
+            http_response_code(200);
+            echo json_encode(array("message" => "Course was deleted."));
+        } else {
+            http_response_code(503);
+            echo json_encode(array("message" => "Unable to delete course."));
         }
     }
 
-    public function getCourseEnrollments($id)
+    public function createCourseTable()
     {
-        try {
-            if (!$this->recordExists('courses', $id)) {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'Course not found.']);
-                return;
-            }
-
-            $query = "
-                SELECT 
-                    s.id, 
-                    s.first_name, 
-                    s.last_name, 
-                    s.username, 
-                    e.enrollment_date, 
-                    e.grade 
-                FROM enrollments e
-                JOIN students s ON e.student_id = s.id
-                WHERE e.course_id = :id AND e.deleted_at IS NULL
-            ";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['status' => 'success', 'data' => $students]);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
-        }
-    }
-
-    private function recordExists($tableName, $id)
-    {
-        $query = "SELECT id FROM " . $tableName . " WHERE id = :id AND deleted_at IS NULL";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch() !== false;
+        Course::createTable($this->db);
+        echo "Course table created successfully.";
     }
 }
