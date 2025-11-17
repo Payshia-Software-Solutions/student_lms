@@ -13,7 +13,7 @@ class CourseController
         $this->course = new Course($pdo);
     }
 
-    public function createCourse()
+    public function createRecord()
     {
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -26,7 +26,7 @@ class CourseController
         }
     }
 
-    public function getCourses()
+    public function getAllRecords()
     {
         $stmt = $this->course->getAll();
         $num = $stmt->rowCount();
@@ -56,7 +56,7 @@ class CourseController
         }
     }
 
-    public function getCourse($id)
+    public function getRecordById($id)
     {
         if ($this->course->getById($id)) {
             $course_item = array(
@@ -75,7 +75,7 @@ class CourseController
         }
     }
 
-    public function updateCourse($id)
+    public function updateRecord($id)
     {
         $data = json_decode(file_get_contents("php://input"), true);
         $data['id'] = $id;
@@ -89,7 +89,7 @@ class CourseController
         }
     }
 
-    public function deleteCourse($id)
+    public function deleteRecord($id)
     {
         if ($this->course->delete($id)) {
             http_response_code(200);
