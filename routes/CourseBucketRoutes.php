@@ -22,6 +22,14 @@ return [
         'auth' => 'private'
     ],
 
+    // Get all course buckets for a specific course
+    'GET /course_buckets/course/{course_id}/' => [
+        'handler' => function ($course_id) use ($courseBucketController) {
+            $courseBucketController->getRecordsByCourseId($course_id);
+        },
+        'auth' => 'private'
+    ],
+
     // Create a new course bucket
     'POST /course_buckets/' => [
         'handler' => function () use ($courseBucketController) {
