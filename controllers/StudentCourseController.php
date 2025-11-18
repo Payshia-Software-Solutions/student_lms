@@ -17,9 +17,25 @@ class StudentCourseController
     {
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if ($this->studentCourse->create($data)) {
-            http_response_code(201);
-            echo json_encode(array("message" => "Student course entry was created."));
+        $newId = $this->studentCourse->create($data);
+        if ($newId) {
+            if ($this->studentCourse->getById($newId)) {
+                $studentCourse_item = array(
+                    "message" => "Student course entry was created.",
+                    "id" => $this->studentCourse->id,
+                    "course_id" => $this->studentCourse->course_id,
+                    "student_number" => $this->studentCourse->student_number,
+                    "created_at" => $this->studentCourse->created_at,
+                    "created_by" => $this->studentCourse->created_by,
+                    "updated_at" => $this->studentCourse->updated_at,
+                    "updated_by" => $this->studentCourse->updated_by
+                );
+                http_response_code(201);
+                echo json_encode($studentCourse_item);
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "Unable to retrieve created student course entry."));
+            }
         } else {
             http_response_code(503);
             echo json_encode(array("message" => "Unable to create student course entry."));
@@ -82,8 +98,23 @@ class StudentCourseController
         $data = json_decode(file_get_contents("php://input"), true);
 
         if ($this->studentCourse->update($id, $data)) {
-            http_response_code(200);
-            echo json_encode(array("message" => "Student course entry was updated."));
+            if ($this->studentCourse->getById($id)) {
+                $studentCourse_item = array(
+                    "message" => "Student course entry was updated.",
+                    "id" => $this->studentCourse->id,
+                    "course_id" => $this->studentCourse->course_id,
+                    "student_number" => $this->studentCourse->student_number,
+                    "created_at" => $this->studentCourse->created_at,
+                    "created_by" => $this->studentCourse->created_by,
+                    "updated_at" => $this->studentCourse->updated_at,
+                    "updated_by" => $this->studentCourse->updated_by
+                );
+                http_response_code(200);
+                echo json_encode($studentCourse_item);
+            } else {
+                http_response_code(404);
+                echo json_encode(array("message" => "Student course entry not found after update."));
+            }
         } else {
             http_response_code(503);
             echo json_encode(array("message" => "Unable to update student course entry."));
