@@ -36,8 +36,8 @@ class UserController
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Generate student number only for 'student' user_status
-        if (isset($data['user_status']) && $data['user_status'] === 'student || admin') {
+        // Generate student number for 'student' or 'admin' user_status
+        if (isset($data['user_status']) && ($data['user_status'] === 'student' || $data['user_status'] === 'admin')) {
             if (isset($data['company_id'])) {
                 $trifix = $this->company->getTrifixById($data['company_id']);
                 if ($trifix) {
@@ -52,7 +52,7 @@ class UserController
                 }
             } else {
                 http_response_code(400);
-                echo json_encode(['status' => 'error', 'message' => 'company_id is required for students']);
+                echo json_encode(['status' => 'error', 'message' => 'company_id is required for students and admins']);
                 return;
             }
         } else {
