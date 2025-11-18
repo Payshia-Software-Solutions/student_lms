@@ -43,7 +43,8 @@ class CourseController
                     "course_code" => $course_code,
                     "description" => $description,
                     "credits" => $credits,
-                    "payment_status" => $payment_status
+                    "payment_status" => $payment_status,
+                    "enrollment_key" => $enrollment_key
                 );
                 array_push($courses_arr["records"], $course_item);
             }
@@ -65,7 +66,8 @@ class CourseController
                 "course_code" => $this->course->course_code,
                 "description" => $this->course->description,
                 "credits" => $this->course->credits,
-                "payment_status" => $this->course->payment_status
+                "payment_status" => $this->course->payment_status,
+                "enrollment_key" => $this->course->enrollment_key
             );
             http_response_code(200);
             echo json_encode($course_item);

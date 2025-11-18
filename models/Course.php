@@ -11,6 +11,7 @@ class Course
     public $description;
     public $credits;
     public $payment_status;
+    public $enrollment_key;
     public $created_at;
     public $updated_at;
     public $deleted_at;
@@ -24,7 +25,7 @@ class Course
     // Create table
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS courses (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            course_name VARCHAR(255) NOT NULL,\n            course_code VARCHAR(50) UNIQUE NOT NULL,\n            description TEXT,\n            credits INT NOT NULL,\n            payment_status ENUM('monthly', 'year', 'once') NOT NULL DEFAULT 'monthly',\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL\n        );";
+        $query = "CREATE TABLE IF NOT EXISTS courses (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            course_name VARCHAR(255) NOT NULL,\n            course_code VARCHAR(50) UNIQUE NOT NULL,\n            description TEXT,\n            credits INT NOT NULL,\n            payment_status ENUM('monthly', 'year', 'once') NOT NULL DEFAULT 'monthly',\n            enrollment_key VARCHAR(5) NULL,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL\n        );";
 
         try {
             $stmt = $db->prepare($query);
@@ -37,7 +38,7 @@ class Course
     // Create a new course
     public function create($data)
     {
-        $query = "INSERT INTO courses (course_name, course_code, description, credits, payment_status) VALUES (:course_name, :course_code, :description, :credits, :payment_status)";
+        $query = "INSERT INTO courses (course_name, course_code, description, credits, payment_status, enrollment_key) VALUES (:course_name, :course_code, :description, :credits, :payment_status, :enrollment_key)";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
@@ -46,12 +47,14 @@ class Course
         $this->description = htmlspecialchars(strip_tags($data['description']));
         $this->credits = htmlspecialchars(strip_tags($data['credits']));
         $this->payment_status = htmlspecialchars(strip_tags($data['payment_status']));
+        $this->enrollment_key = isset($data['enrollment_key']) ? htmlspecialchars(strip_tags($data['enrollment_key'])) : null;
 
         $stmt->bindParam(':course_name', $this->course_name);
         $stmt->bindParam(':course_code', $this->course_code);
         $stmt->bindParam(':description', $this->description);
         $stmt->bindParam(':credits', $this->credits);
         $stmt->bindParam(':payment_status', $this->payment_status);
+        $stmt->bindParam(':enrollment_key', $this->enrollment_key);
 
         if ($stmt->execute()) {
             return true;
@@ -85,6 +88,7 @@ class Course
             $this->description = $row['description'];
             $this->credits = $row['credits'];
             $this->payment_status = $row['payment_status'];
+            $this->enrollment_key = $row['enrollment_key'];
             return true;
         }
         return false;
@@ -93,7 +97,7 @@ class Course
     // Update a course
     public function update($data)
     {
-        $query = "UPDATE courses SET course_name = :course_name, course_code = :course_code, description = :description, credits = :credits, payment_status = :payment_status WHERE id = :id";
+        $query = "UPDATE courses SET course_name = :course_name, course_code = :course_code, description = :description, credits = :credits, payment_status = :payment_status, enrollment_key = :enrollment_key WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
@@ -103,6 +107,8 @@ class Course
         $this->description = htmlspecialchars(strip_tags($data['description']));
         $this->credits = htmlspecialchars(strip_tags($data['credits']));
         $this->payment_status = htmlspecialchars(strip_tags($data['payment_status']));
+        $this->enrollment_key = isset($data['enrollment_key']) ? htmlspecialchars(strip_tags($data['enrollment_key'])) : null;
+
 
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':course_name', $this->course_name);
@@ -110,6 +116,7 @@ class Course
         $stmt->bindParam(':description', $this->description);
         $stmt->bindParam(':credits', $this->credits);
         $stmt->bindParam(':payment_status', $this->payment_status);
+        $stmt->bindParam(':enrollment_key', $this->enrollment_key);
 
         if ($stmt->execute()) {
             return true;

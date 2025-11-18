@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Company.php';
 require_once __DIR__ . '/../utils/JwtHelper.php';
 
 class UserController
 {
     private $user;
+    private $company;
 
     public function __construct($pdo)
     {
         $this->user = new User($pdo);
+        $this->company = new Company($pdo);
     }
 
     public function getAllRecords()
@@ -35,15 +38,23 @@ class UserController
 
         // Generate student number only for 'student' user_status
         if (isset($data['user_status']) && $data['user_status'] === 'student') {
-            $lastId = $this->user->getLastStudentId();
-            $nextId = $lastId + 1;
-            $year = date('Y');
-            
-            // Format ID with leading zeros (e.g., 01, 02, ... 10, 11)
-            $paddedId = str_pad($nextId, 2, '0', STR_PAD_LEFT);
-
-            // Create the student number, e.g., ST-202501
-            $data['student_number'] = 'ST-' . $year . $paddedId;
+            if (isset($data['company_id'])) {
+                $trifix = $this->company->getTrifixById($data['company_id']);
+                if ($trifix) {
+                    $lastId = $this->user->getLastStudentId();
+                    $nextId = $lastId + 1;
+                    $paddedId = str_pad($nextId, 5, '0', STR_PAD_LEFT);
+                    $data['student_number'] = $trifix . '-' . $paddedId;
+                } else {
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'message' => 'Invalid company_id']);
+                    return;
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'company_id is required for students']);
+                return;
+            }
         } else {
             $data['student_number'] = null;
         }
