@@ -69,6 +69,7 @@ $EnrollmentRoutes = require_once __DIR__ . '/EnrollmentRoutes.php';
 $LocationRoutes = require_once __DIR__ . '/LocationRoutes.php';
 $CompanyRoutes = require_once __DIR__ . '/CompanyRoutes.php';
 $StudentCourseRoutes = require_once __DIR__ . '/StudentCourseRoutes.php';
+$CourseBucketRoutes = require_once __DIR__ . '/CourseBucketRoutes.php';
 
 
 // Combine all routes
@@ -80,6 +81,7 @@ $routes = array_merge(
     $LocationRoutes,
     $CompanyRoutes,
     $StudentCourseRoutes,
+    $CourseBucketRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
