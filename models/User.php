@@ -70,7 +70,7 @@ class User
         if (isset($data['user_status'])) $fields['user_status'] = $data['user_status'];
         if (isset($data['student_number'])) $fields['student_number'] = $data['student_number'];
         if (isset($data['company_id'])) $fields['company_id'] = $data['company_id'];
-        if (isset($data['password'])) $fields['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+        if (isset($data['password'])) $fields['password'] = password_hash($data['password'], PASSWORD_BCRYT);
 
         if (empty($fields)) {
             return false;
@@ -116,10 +116,6 @@ class User
         return false;
     }
 
-{
-    "identifier": "john.doe@example.com",
-    "password": "strongpassword"
-}
     public function getLastStudentId()
     {
         $stmt = $this->pdo->prepare("SELECT id FROM users ORDER BY id DESC LIMIT 1");
