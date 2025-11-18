@@ -12,9 +12,11 @@ class UserController
     private $company;
     private $studentCourse;
     private $course;
+    private $pdo;
 
     public function __construct($pdo)
     {
+        $this->pdo = $pdo;
         $this->user = new User($pdo);
         $this->company = new Company($pdo);
         $this->studentCourse = new StudentCourse($pdo);
@@ -45,7 +47,7 @@ class UserController
             $studentCourses = $this->studentCourse->getByStudentNumber($studentNumber);
             $courses = [];
             foreach ($studentCourses as $studentCourse) {
-                $course = new Course($this->user->getPdo());
+                $course = new Course($this->pdo);
                 if ($course->getById($studentCourse['course_id'])) {
                     $courses[] = [
                         'student_course_id' => $studentCourse['id'],
