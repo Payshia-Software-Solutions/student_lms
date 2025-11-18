@@ -4,15 +4,6 @@ class StudentCourse
 {
     private $conn;
 
-    // Properties
-    public $id;
-    public $course_id;
-    public $student_number;
-    public $created_at;
-    public $created_by;
-    public $updated_at;
-    public $updated_by;
-
     // Constructor
     public function __construct($db)
     {
@@ -45,90 +36,71 @@ class StudentCourse
     // Create a new student course entry
     public function create($data)
     {
-        $query = "INSERT INTO student_course (course_id, student_number, created_by) VALUES (:course_id, :student_number, :created_by)";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("INSERT INTO student_course (course_id, student_number, created_by) VALUES (:course_id, :student_number, :created_by)");
 
-        // Sanitize and bind parameters
-        $this->course_id = htmlspecialchars(strip_tags($data['course_id']));
-        $this->student_number = htmlspecialchars(strip_tags($data['student_number']));
-        $this->created_by = isset($data['created_by']) ? htmlspecialchars(strip_tags($data['created_by'])) : null;
-
-        $stmt->bindParam(':course_id', $this->course_id);
-        $stmt->bindParam(':student_number', $this->student_number);
-        $stmt->bindParam(':created_by', $this->created_by);
-
-        if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        }
-        return false;
+        $stmt->execute([
+            ':course_id' => $data['course_id'],
+            ':student_number' => $data['student_number'],
+            ':created_by' => $GLOBALS['jwtPayload']->data->id ?? null
+        ]);
+        return $this->conn->lastInsertId();
     }
 
     // Get all student course entries
     public function getAll()
     {
-        $query = "SELECT * FROM student_course";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("SELECT * FROM student_course");
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Get a single student course entry by ID
     public function getById($id)
     {
-        $query = "SELECT * FROM student_course WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $id);
-        $stmt->execute();
+        $stmt = $this->conn->prepare("SELECT * FROM student_course WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if($row) {
-            $this->id = $row['id'];
-            $this->course_id = $row['course_id'];
-            $this->student_number = $row['student_number'];
-            $this->created_at = $row['created_at'];
-            $this->created_by = $row['created_by'];
-            $this->updated_at = $row['updated_at'];
-            $this->updated_by = $row['updated_by'];
-            return true;
-        }
-        return false;
+    // Get all course entries for a student
+    public function getByStudentNumber($studentNumber)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM student_course WHERE student_number = ?");
+        $stmt->execute([$studentNumber]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Update a student course entry
     public function update($id, $data)
     {
-        $query = "UPDATE student_course SET course_id = :course_id, student_number = :student_number, updated_by = :updated_by WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
+        $fields = [];
+        if (isset($data['course_id'])) $fields['course_id'] = $data['course_id'];
+        if (isset($data['student_number'])) $fields['student_number'] = $data['student_number'];
+        $fields['updated_by'] = $GLOBALS['jwtPayload']->data->id ?? null;
 
-        // Sanitize and bind parameters
-        $this->id = htmlspecialchars(strip_tags($id));
-        $this->course_id = htmlspecialchars(strip_tags($data['course_id']));
-        $this->student_number = htmlspecialchars(strip_tags($data['student_number']));
-        $this->updated_by = isset($data['updated_by']) ? htmlspecialchars(strip_tags($data['updated_by'])) : null;
-
-
-        $stmt->bindParam(':id', $this->id);
-        $stmt->bindParam(':course_id', $this->course_id);
-        $stmt->bindParam(':student_number', $this->student_number);
-        $stmt->bindParam(':updated_by', $this->updated_by);
-
-        if ($stmt->execute()) {
-            return true;
+        if (count($fields) <= 1) {
+            return false;
         }
-        return false;
+
+        $fields['id'] = $id;
+
+        $setClause = "";
+        foreach ($fields as $key => $value) {
+            if ($key !== 'id') {
+                $setClause .= "$key = :$key, ";
+            }
+        }
+        $setClause = rtrim($setClause, ', ');
+
+        $stmt = $this->conn->prepare("UPDATE student_course SET $setClause WHERE id = :id");
+
+        return $stmt->execute($fields);
     }
 
     // Delete a student course entry
     public function delete($id)
     {
-        $query = "DELETE FROM student_course WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $id);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+        $stmt = $this->conn->prepare("DELETE FROM student_course WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 }

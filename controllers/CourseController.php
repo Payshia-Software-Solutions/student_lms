@@ -17,9 +17,29 @@ class CourseController
     {
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if ($this->course->create($data)) {
-            http_response_code(201);
-            echo json_encode(array("message" => "Course was created."));
+        $newId = $this->course->create($data);
+        if ($newId) {
+            if ($this->course->getById($newId)) {
+                $course_item = array(
+                    "id" => $this->course->id,
+                    "course_name" => $this->course->course_name,
+                    "course_code" => $this->course->course_code,
+                    "description" => $this->course->description,
+                    "credits" => $this->course->credits,
+                    "payment_status" => $this->course->payment_status,
+                    "enrollment_key" => $this->course->enrollment_key,
+                    "created_at" => $this->course->created_at,
+                    "updated_at" => $this->course->updated_at
+                );
+                http_response_code(201);
+                echo json_encode(array(
+                    "message" => "Course was created.",
+                    "data" => $course_item
+                ));
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "Unable to retrieve created course."));
+            }
         } else {
             http_response_code(503);
             echo json_encode(array("message" => "Unable to create course."));
@@ -80,11 +100,29 @@ class CourseController
     public function updateRecord($id)
     {
         $data = json_decode(file_get_contents("php://input"), true);
-        $data['id'] = $id;
 
-        if ($this->course->update($data)) {
-            http_response_code(200);
-            echo json_encode(array("message" => "Course was updated."));
+        if ($this->course->update($id, $data)) {
+            if ($this->course->getById($id)) {
+                $course_item = array(
+                    "id" => $this->course->id,
+                    "course_name" => $this->course->course_name,
+                    "course_code" => $this->course->course_code,
+                    "description" => $this->course->description,
+                    "credits" => $this->course->credits,
+                    "payment_status" => $this->course->payment_status,
+                    "enrollment_key" => $this->course->enrollment_key,
+                    "created_at" => $this->course->created_at,
+                    "updated_at" => $this->course->updated_at
+                );
+                http_response_code(200);
+                echo json_encode(array(
+                    "message" => "Course was updated.",
+                    "data" => $course_item
+                ));
+            } else {
+                http_response_code(404);
+                echo json_encode(array("message" => "Course not found after update."));
+            }
         } else {
             http_response_code(503);
             echo json_encode(array("message" => "Unable to update course."));

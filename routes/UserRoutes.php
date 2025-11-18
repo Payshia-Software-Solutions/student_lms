@@ -30,6 +30,14 @@ return [
         'auth' => 'private'
     ],
 
+    // Get a user by Student Number - Private (JWT)
+    'GET /users/student/{student_number}/' => [
+        'handler' => function ($student_number) use ($userController) {
+            $userController->getRecordByStudentNumber($student_number);
+        },
+        'auth' => 'private'
+    ],
+
     // Create a new user (Signup) - No Auth
     'POST /users/' => [
         'handler' => function () use ($userController) {

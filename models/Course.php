@@ -57,7 +57,7 @@ class Course
         $stmt->bindParam(':enrollment_key', $this->enrollment_key);
 
         if ($stmt->execute()) {
-            return true;
+            return $this->conn->lastInsertId();
         }
         return false;
     }
@@ -89,19 +89,21 @@ class Course
             $this->credits = $row['credits'];
             $this->payment_status = $row['payment_status'];
             $this->enrollment_key = $row['enrollment_key'];
+            $this->created_at = $row['created_at'];
+            $this->updated_at = $row['updated_at'];
             return true;
         }
         return false;
     }
 
     // Update a course
-    public function update($data)
+    public function update($id, $data)
     {
         $query = "UPDATE courses SET course_name = :course_name, course_code = :course_code, description = :description, credits = :credits, payment_status = :payment_status, enrollment_key = :enrollment_key WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
-        $this->id = htmlspecialchars(strip_tags($data['id']));
+        $this->id = htmlspecialchars(strip_tags($id));
         $this->course_name = htmlspecialchars(strip_tags($data['course_name']));
         $this->course_code = htmlspecialchars(strip_tags($data['course_code']));
         $this->description = htmlspecialchars(strip_tags($data['description']));
