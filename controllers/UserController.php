@@ -37,7 +37,7 @@ class UserController
         $data = json_decode(file_get_contents('php://input'), true);
 
         // Generate student number only for 'student' user_status
-        if (isset($data['user_status']) && $data['user_status'] === 'student') {
+        if (isset($data['user_status']) && $data['user_status'] === 'student || admin') {
             if (isset($data['company_id'])) {
                 $trifix = $this->company->getTrifixById($data['company_id']);
                 if ($trifix) {
