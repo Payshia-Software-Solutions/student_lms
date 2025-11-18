@@ -38,6 +38,14 @@ return [
         'auth' => 'private'
     ],
 
+    // Get a student course entry by Student Number - Private (JWT)
+    'GET /student-courses/student/{student_number}/' => [
+        'handler' => function ($student_number) use ($studentCourseController) {
+            $studentCourseController->getRecordByStudentNumber($student_number);
+        },
+        'auth' => 'private'
+    ],
+
     // Update a student course entry - Private (JWT)
     'PUT /student-courses/{id}/' => [
         'handler' => function ($id) use ($studentCourseController) {

@@ -2,17 +2,20 @@
 
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Company.php';
+require_once __DIR__ . '/../models/StudentCourse.php';
 require_once __DIR__ . '/../utils/JwtHelper.php';
 
 class UserController
 {
     private $user;
     private $company;
+    private $studentCourse;
 
     public function __construct($pdo)
     {
         $this->user = new User($pdo);
         $this->company = new Company($pdo);
+        $this->studentCourse = new StudentCourse($pdo);
     }
 
     public function getAllRecords()
@@ -25,6 +28,19 @@ class UserController
     {
         $user = $this->user->getById($id);
         if ($user) {
+            echo json_encode(['status' => 'success', 'data' => $user]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'User not found']);
+        }
+    }
+
+    public function getRecordByStudentNumber($studentNumber)
+    {
+        $user = $this->user->getByStudentNumber($studentNumber);
+        if ($user) {
+            $courses = $this->studentCourse->getByStudentNumber($studentNumber);
+            $user['courses'] = $courses;
             echo json_encode(['status' => 'success', 'data' => $user]);
         } else {
             http_response_code(404);
@@ -97,13 +113,13 @@ class UserController
     {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($data['email']) || !isset($data['password'])) {
+        if (!isset($data['identifier']) || !isset($data['password'])) {
             http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Email and password are required']);
+            echo json_encode(['status' => 'error', 'message' => 'Identifier and password are required']);
             return;
         }
         
-        $user = $this->user->login($data['email'], $data['password']);
+        $user = $this->user->login($data['identifier'], $data['password']);
         
         if ($user) {
             $token = JwtHelper::generateToken([
@@ -122,7 +138,7 @@ class UserController
             ]);
         } else {
             http_response_code(401);
-            echo json_encode(['status' => 'error', 'message' => 'Invalid email or password']);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid identifier or password']);
         }
     }
 }
