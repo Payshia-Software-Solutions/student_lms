@@ -2,7 +2,7 @@ name: 🚀QA Deploy website on push API
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to the main branch
+      - idx  # Trigger deployment on push to the main branch
 
       
 jobs:
