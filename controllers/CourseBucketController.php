@@ -44,8 +44,18 @@ class CourseBucketController
     public function getRecordsByCourseId($course_id)
     {
         $stmt = $this->courseBucket->getByCourseId($course_id);
-        $courseBuckets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['status' => 'success', 'data' => $courseBuckets]);
+        if ($stmt) {
+            $courseBuckets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($courseBuckets) {
+                echo json_encode(['status' => 'success', 'data' => $courseBuckets]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'No course buckets found for this course.']);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve course buckets.']);
+        }
     }
 
     public function createRecord()
