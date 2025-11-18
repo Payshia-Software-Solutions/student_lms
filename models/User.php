@@ -38,8 +38,8 @@ class User
         $stmt = $this->pdo->prepare("\n            INSERT INTO users (f_name, l_name, email, password, nic, user_status, student_number, company_id, created_by)\n            VALUES (:f_name, :l_name, :email, :password, :nic, :user_status, :student_number, :company_id, :created_by)\n        ");
 
         $password = password_hash($data['password'], PASSWORD_BCRYPT);
-        
-        return $stmt->execute([
+
+        $stmt->execute([
             ':f_name' => $data['f_name'],
             ':l_name' => $data['l_name'],
             ':email' => $data['email'],
@@ -50,6 +50,7 @@ class User
             ':company_id' => $data['company_id'] ?? null,
             ':created_by' => $GLOBALS['jwtPayload']->data->id ?? null
         ]);
+        return $this->pdo->lastInsertId();
     }
 
     public function update($id, $data)
@@ -82,7 +83,7 @@ class User
 
         return $stmt->execute($fields);
     }
-    
+
     public function delete($id)
     {
         // Soft delete
@@ -107,7 +108,7 @@ class User
 
         return false;
     }
-    
+
     public function getLastStudentId()
     {
         $stmt = $this->pdo->prepare("SELECT id FROM users ORDER BY id DESC LIMIT 1");

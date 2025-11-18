@@ -59,9 +59,11 @@ class UserController
             $data['student_number'] = null;
         }
 
-        if ($this->user->create($data)) {
+        $newId = $this->user->create($data);
+        if ($newId) {
+            $user = $this->user->getById($newId);
             http_response_code(201);
-            echo json_encode(['status' => 'success', 'message' => 'User created successfully']);
+            echo json_encode(['status' => 'success', 'message' => 'User created successfully', 'data' => $user]);
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to create user. A user with this email or NIC may already exist.']);
@@ -73,7 +75,8 @@ class UserController
         $data = json_decode(file_get_contents('php://input'), true);
         
         if ($this->user->update($id, $data)) {
-            echo json_encode(['status' => 'success', 'message' => 'User updated successfully']);
+            $user = $this->user->getById($id);
+            echo json_encode(['status' => 'success', 'message' => 'User updated successfully', 'data' => $user]);
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to update user']);
