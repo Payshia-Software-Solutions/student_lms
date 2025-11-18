@@ -58,7 +58,7 @@ class StudentCourse
         $stmt->bindParam(':created_by', $this->created_by);
 
         if ($stmt->execute()) {
-            return true;
+            return $this->conn->lastInsertId();
         }
         return false;
     }
