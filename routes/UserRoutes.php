@@ -31,7 +31,7 @@ return [
     ],
 
     // Get a user by Student Number - Private (JWT)
-    'GET /users/student_number/' => [
+    'GET /users/full/student_number/' => [
         'handler' => function () use ($userController) {
             if (isset($_GET['student_number'])) {
                 $userController->getRecordByStudentNumber($_GET['student_number']);
