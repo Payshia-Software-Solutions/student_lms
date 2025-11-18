@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Company.php';
 require_once __DIR__ . '/../models/StudentCourse.php';
+require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../utils/JwtHelper.php';
 
 class UserController
@@ -10,12 +11,14 @@ class UserController
     private $user;
     private $company;
     private $studentCourse;
+    private $course;
 
     public function __construct($pdo)
     {
         $this->user = new User($pdo);
         $this->company = new Company($pdo);
         $this->studentCourse = new StudentCourse($pdo);
+        $this->course = new Course($pdo);
     }
 
     public function getAllRecords()
@@ -39,7 +42,25 @@ class UserController
     {
         $user = $this->user->getByStudentNumber($studentNumber);
         if ($user) {
-            $courses = $this->studentCourse->getByStudentNumber($studentNumber);
+            $studentCourses = $this->studentCourse->getByStudentNumber($studentNumber);
+            $courses = [];
+            foreach ($studentCourses as $studentCourse) {
+                $course = new Course($this->user->getPdo());
+                if ($course->getById($studentCourse['course_id'])) {
+                    $courses[] = [
+                        'student_course_id' => $studentCourse['id'],
+                        'course_details' => [
+                            'id' => $course->id,
+                            'course_name' => $course->course_name,
+                            'course_code' => $course->course_code,
+                            'description' => $course->description,
+                            'credits' => $course->credits,
+                            'payment_status' => $course->payment_status,
+                            'enrollment_key' => $course->enrollment_key,
+                        ]
+                    ];
+                }
+            }
             $user['courses'] = $courses;
             echo json_encode(['status' => 'success', 'data' => $user]);
         } else {
