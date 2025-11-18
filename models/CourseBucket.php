@@ -106,6 +106,16 @@ class CourseBucket
         }
         return false;
     }
+    
+    // Get all course buckets for a specific course
+    public function getByCourseId($course_id)
+    {
+        $query = "SELECT * FROM course_bucket WHERE course_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $course_id);
+        $stmt->execute();
+        return $stmt;
+    }
 
     // Update a course bucket
     public function update($id, $data)

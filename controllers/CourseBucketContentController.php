@@ -47,8 +47,27 @@ class CourseBucketContentController
         $data = json_decode(file_get_contents('php://input'), true);
         $newId = $this->courseBucketContent->create($data);
         if ($newId) {
-            http_response_code(201);
-            echo json_encode(['status' => 'success', 'message' => 'Course bucket content created successfully', 'data' => ['id' => $newId]]);
+            if ($this->courseBucketContent->getById($newId)) {
+                $courseBucketContent_item = [
+                    'id' => $this->courseBucketContent->id,
+                    'course_id' => $this->courseBucketContent->course_id,
+                    'course_bucket_id' => $this->courseBucketContent->course_bucket_id,
+                    'content_type' => $this->courseBucketContent->content_type,
+                    'content_title' => $this->courseBucketContent->content_title,
+                    'content' => $this->courseBucketContent->content,
+                    'view_count' => $this->courseBucketContent->view_count,
+                    'is_active' => $this->courseBucketContent->is_active,
+                    'created_at' => $this->courseBucketContent->created_at,
+                    'created_by' => $this->courseBucketContent->created_by,
+                    'updated_at' => $this->courseBucketContent->updated_at,
+                    'updated_by' => $this->courseBucketContent->updated_by,
+                ];
+                http_response_code(201);
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket content created successfully', 'data' => $courseBucketContent_item]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created course bucket content.']);
+            }
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to create course bucket content']);
@@ -59,7 +78,26 @@ class CourseBucketContentController
     {
         $data = json_decode(file_get_contents('php://input'), true);
         if ($this->courseBucketContent->update($id, $data)) {
-            echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully']);
+            if ($this->courseBucketContent->getById($id)) {
+                $courseBucketContent_item = [
+                    'id' => $this->courseBucketContent->id,
+                    'course_id' => $this->courseBucketContent->course_id,
+                    'course_bucket_id' => $this->courseBucketContent->course_bucket_id,
+                    'content_type' => $this->courseBucketContent->content_type,
+                    'content_title' => $this->courseBucketContent->content_title,
+                    'content' => $this->courseBucketContent->content,
+                    'view_count' => $this->courseBucketContent->view_count,
+                    'is_active' => $this->courseBucketContent->is_active,
+                    'created_at' => $this->courseBucketContent->created_at,
+                    'created_by' => $this->courseBucketContent->created_by,
+                    'updated_at' => $this->courseBucketContent->updated_at,
+                    'updated_by' => $this->courseBucketContent->updated_by,
+                ];
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully', 'data' => $courseBucketContent_item]);
+            } else {
+                 http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Course bucket content not found after update']);
+            }
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to update course bucket content']);

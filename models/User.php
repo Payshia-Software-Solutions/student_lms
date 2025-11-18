@@ -116,6 +116,10 @@ class User
         return false;
     }
 
+{
+    "identifier": "john.doe@example.com",
+    "password": "strongpassword"
+}
     public function getLastStudentId()
     {
         $stmt = $this->pdo->prepare("SELECT id FROM users ORDER BY id DESC LIMIT 1");
