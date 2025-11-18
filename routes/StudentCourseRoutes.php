@@ -6,6 +6,14 @@ $pdo = $GLOBALS['pdo'];
 $studentCourseController = new StudentCourseController($pdo);
 
 return [
+    // Create student_course table
+    'GET /student-courses/create-table/' => [
+        'handler' => function () use ($studentCourseController) {
+            $studentCourseController->createStudentCourseTable();
+        },
+        'auth' => 'private'
+    ],
+
     // Create a new student course entry - Private (JWT)
     'POST /student-courses/' => [
         'handler' => function () use ($studentCourseController) {
