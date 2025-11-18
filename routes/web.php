@@ -8,6 +8,10 @@ require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Enrollment.php';
 
+// Instantiate DB & connect
+$database = new Database();
+$GLOBALS['pdo'] = $database->connect();
+
 CORSMiddleware::handle();
 
 // --- Error and Exception Handling ---
@@ -63,6 +67,7 @@ $StudentRoutes = require_once __DIR__ . '/StudentRoutes.php';
 $CourseRoutes = require_once __DIR__ . '/CourseRoutes.php';
 $EnrollmentRoutes = require_once __DIR__ . '/EnrollmentRoutes.php';
 $LocationRoutes = require_once __DIR__ . '/LocationRoutes.php';
+$CompanyRoutes = require_once __DIR__ . '/CompanyRoutes.php';
 
 // Combine all routes
 $routes = array_merge(
@@ -71,6 +76,7 @@ $routes = array_merge(
     $CourseRoutes,
     $EnrollmentRoutes,
     $LocationRoutes,
+    $CompanyRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
