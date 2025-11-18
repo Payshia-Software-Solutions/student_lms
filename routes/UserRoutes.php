@@ -31,9 +31,14 @@ return [
     ],
 
     // Get a user by Student Number - Private (JWT)
-    'GET /users/student/{student_number}/' => [
-        'handler' => function ($student_number) use ($userController) {
-            $userController->getRecordByStudentNumber($student_number);
+    'GET /users/student_number/' => [
+        'handler' => function () use ($userController) {
+            if (isset($_GET['student_number'])) {
+                $userController->getRecordByStudentNumber($_GET['student_number']);
+            } else {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'student_number parameter is required']);
+            }
         },
         'auth' => 'private'
     ],
