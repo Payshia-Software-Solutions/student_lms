@@ -110,11 +110,16 @@ class CourseBucket
     // Get all course buckets for a specific course
     public function getByCourseId($course_id)
     {
-        $query = "SELECT * FROM course_bucket WHERE course_id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $course_id);
-        $stmt->execute();
-        return $stmt;
+        try {
+            $query = "SELECT * FROM course_bucket WHERE course_id = ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(1, $course_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Database Error: " . $e->getMessage());
+            return false;
+        }
     }
 
     // Update a course bucket
