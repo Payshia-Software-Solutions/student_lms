@@ -1,0 +1,167 @@
+<?php
+
+require_once __DIR__ . '/../models/PaymentRequest.php';
+
+class PaymentRequestController
+{
+    private $paymentRequest;
+    private $ftp_config;
+
+    public function __construct($pdo)
+    {
+        $this->paymentRequest = new PaymentRequest($pdo);
+        $this->ftp_config = require __DIR__ . '/../config/ftp.php';
+    }
+
+    public function getAllRecords()
+    {
+        $stmt = $this->paymentRequest->getAll();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
+    public function getRecordById($id)
+    {
+        if ($this->paymentRequest->getById($id)) {
+            $record_item = [
+                'id' => $this->paymentRequest->id,
+                'student_number' => $this->paymentRequest->student_number,
+                'slip_url' => $this->paymentRequest->slip_url,
+                'payment_amount' => $this->paymentRequest->payment_amount,
+                'hash' => $this->paymentRequest->hash,
+                'bank' => $this->paymentRequest->bank,
+                'branch' => $this->paymentRequest->branch,
+                'ref' => $this->paymentRequest->ref,
+                'request_status' => $this->paymentRequest->request_status,
+                'created_at' => $this->paymentRequest->created_at,
+            ];
+            echo json_encode(['status' => 'success', 'data' => $record_item]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Record not found']);
+        }
+    }
+
+    public function createRecord()
+    {
+        // --- FTP and File Handling ---
+
+        $ftp_server = $this->ftp_config['server'];
+        $ftp_user = $this->ftp_config['user'];
+        $ftp_pass = $this->ftp_config['password'];
+        $public_url_base = $this->ftp_config['public_url'];
+
+        if (!isset($_FILES['payment_slip'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'No payment slip was uploaded.']);
+            return;
+        }
+
+        $file = $_FILES['payment_slip'];
+        $tmp_path = $file['tmp_name'];
+        $file_name = uniqid() . '-' . basename($file['name']);
+        $remote_path = '/payment_slips/' . $file_name;
+
+        // Calculate image hash
+        $image_content = file_get_contents($tmp_path);
+        $image_hash = hash('sha256', $image_content);
+
+        // Connect to FTP
+        $conn_id = ftp_connect($ftp_server);
+        if (!$conn_id) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
+            return;
+        }
+
+        // Login to FTP
+        if (!ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP login failed.']);
+            ftp_close($conn_id);
+            return;
+        }
+
+        // Upload the file
+        if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP file upload failed.']);
+            ftp_close($conn_id);
+            return;
+        }
+
+        // Close FTP connection
+        ftp_close($conn_id);
+
+        // --- End of FTP Handling ---
+
+        $data = json_decode($_POST['data'], true);
+        $data['slip_url'] = $public_url_base . $file_name;
+        $data['hash'] = $image_hash;
+
+        $newId = $this->paymentRequest->create($data);
+
+        if ($newId) {
+            if ($this->paymentRequest->getById($newId)) {
+                $record_item = [
+                    'id' => $this->paymentRequest->id,
+                    'student_number' => $this->paymentRequest->student_number,
+                    'slip_url' => $this->paymentRequest->slip_url,
+                    'payment_amount' => $this->paymentRequest->payment_amount,
+                    'hash' => $this->paymentRequest->hash,
+                    'bank' => $this->paymentRequest->bank,
+                    'branch' => $this->paymentRequest->branch,
+                    'ref' => $this->paymentRequest->ref,
+                    'request_status' => $this->paymentRequest->request_status,
+                    'created_at' => $this->paymentRequest->created_at,
+                ];
+                http_response_code(201);
+                echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record_item]);
+            } else {
+                 http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created record.']);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create record']);
+        }
+    }
+
+    public function updateRecord($id)
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if ($this->paymentRequest->update($id, $data)) {
+            if ($this->paymentRequest->getById($id)) {
+                 $record_item = [
+                    'id' => $this->paymentRequest->id,
+                    'student_number' => $this->paymentRequest->student_number,
+                    'slip_url' => $this->paymentRequest->slip_url,
+                    'payment_amount' => $this->paymentRequest->payment_amount,
+                    'hash' => $this->paymentRequest->hash,
+                    'bank' => $this->paymentRequest->bank,
+                    'branch' => $this->paymentRequest->branch,
+                    'ref' => $this->paymentRequest->ref,
+                    'request_status' => $this->paymentRequest->request_status,
+                    'created_at' => $this->paymentRequest->created_at,
+                ];
+                echo json_encode(['status' => 'success', 'message' => 'Record updated successfully', 'data' => $record_item]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Record not found after update']);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to update record']);
+        }
+    }
+
+    public function deleteRecord($id)
+    {
+        if ($this->paymentRequest->delete($id)) {
+            echo json_encode(['status' => 'success', 'message' => 'Record deleted successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to delete record']);
+        }
+    }
+}
