@@ -45,11 +45,11 @@ class PaymentRequestController
     public function createRecord()
     {
         // --- FTP and File Handling ---
-
         $ftp_server = $this->ftp_config['server'];
         $ftp_user = $this->ftp_config['user'];
         $ftp_pass = $this->ftp_config['password'];
-        $public_url_base = $this->ftp_config['public_url'];
+        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
+        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
 
         if (!isset($_FILES['payment_slip'])) {
             http_response_code(400);
@@ -78,7 +78,10 @@ class PaymentRequestController
             return;
         }
 
-        $remote_dir = '/payment_slips';
+        // Define the specific directory for payment slips
+        $upload_directory_name = 'payment_slips';
+        $remote_dir = $ftp_root . '/' . $upload_directory_name;
+
         if (!@ftp_chdir($conn_id, $remote_dir)) {
             if (!ftp_mkdir($conn_id, $remote_dir)) {
                 http_response_code(500);
@@ -103,7 +106,8 @@ class PaymentRequestController
         // --- End of FTP Handling ---
 
         $data = json_decode($_POST['data'], true);
-        $data['slip_url'] = $public_url_base . $file_name;
+        // Construct the public URL using the base URL and the upload directory
+        $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
         $data['hash'] = $image_hash;
 
         $newId = $this->paymentRequest->create($data);
