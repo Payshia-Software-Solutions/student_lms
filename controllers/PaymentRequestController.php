@@ -59,30 +59,38 @@ class PaymentRequestController
 
         $file = $_FILES['payment_slip'];
         $tmp_path = $file['tmp_name'];
-        $file_name = uniqid() . '-' . basename($file['name']);
-        $remote_path = '/payment_slips/' . $file_name;
-
-        // Calculate image hash
         $image_content = file_get_contents($tmp_path);
         $image_hash = hash('sha256', $image_content);
 
-        // Connect to FTP
         $conn_id = ftp_connect($ftp_server);
         if (!$conn_id) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
             return;
         }
-
-        // Login to FTP
-        if (!ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+        
+        if (ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+            ftp_pasv($conn_id, true);
+        } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'FTP login failed.']);
             ftp_close($conn_id);
             return;
         }
 
-        // Upload the file
+        $remote_dir = '/payment_slips';
+        if (!@ftp_chdir($conn_id, $remote_dir)) {
+            if (!ftp_mkdir($conn_id, $remote_dir)) {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Failed to create directory on FTP server. Check permissions.']);
+                ftp_close($conn_id);
+                return;
+            }
+        }
+
+        $file_name = uniqid() . '-' . basename($file['name']);
+        $remote_path = $remote_dir . '/' . $file_name;
+
         if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'FTP file upload failed.']);
@@ -90,7 +98,6 @@ class PaymentRequestController
             return;
         }
 
-        // Close FTP connection
         ftp_close($conn_id);
 
         // --- End of FTP Handling ---
