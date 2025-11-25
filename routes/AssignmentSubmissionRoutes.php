@@ -10,8 +10,8 @@ $pdo = $GLOBALS['pdo'];
 $assignmentSubmissionController = new AssignmentSubmissionController($pdo, $ftp_config);
 
 return [
-    // **NEW**: Route for filtering submissions. Keep it before the /:id route.
-    'GET /assignment-submissions/filter' => [
+    // Route for filtering submissions. Keep it before the /:id route.
+    'GET /assignment-submissions/filter/' => [
         'handler' => [$assignmentSubmissionController, 'getRecordsByFilter'],
         'auth' => 'user' // Or 'admin' if this is a privileged action
     ],
@@ -19,9 +19,11 @@ return [
         'handler' => [$assignmentSubmissionController, 'getAllRecords'],
         'auth' => 'user' // Assuming only logged-in users can see submissions
     ],
-    'GET /assignment-submissions/{id}' => [
-        'handler' => function ($params) use ($assignmentSubmissionController) {
-            $assignmentSubmissionController->getRecordById($params['id']);
+
+    // **FIXED**: Corrected handler to properly receive the ID from the URL
+    'GET /assignment-submissions/{id}/' => [
+        'handler' => function ($id) use ($assignmentSubmissionController) {
+            $assignmentSubmissionController->getRecordById($id);
         },
         'auth' => 'user'
     ],
@@ -29,15 +31,19 @@ return [
         'handler' => [$assignmentSubmissionController, 'createRecord'],
         'auth' => 'user' // Students should be logged in to submit
     ],
-    'PUT /assignment-submissions/{id}' => [
-        'handler' => function ($params) use ($assignmentSubmissionController) {
-            $assignmentSubmissionController->updateRecord($params['id']);
+
+    // **FIXED**: Corrected handler to properly receive the ID from the URL
+    'PUT /assignment-submissions/{id}/' => [
+        'handler' => function ($id) use ($assignmentSubmissionController) {
+            $assignmentSubmissionController->updateRecord($id);
         },
         'auth' => 'user' // Or 'admin' if only teachers can grade
     ],
-    'DELETE /assignment-submissions/{id}' => [
-        'handler' => function ($params) use ($assignmentSubmissionController) {
-            $assignmentSubmissionController->deleteRecord($params['id']);
+
+    // **FIXED**: Corrected handler to properly receive the ID from the URL
+    'DELETE /assignment-submissions/{id}/' => [
+        'handler' => function ($id) use ($assignmentSubmissionController) {
+            $assignmentSubmissionController->deleteRecord($id);
         },
         'auth' => 'admin' // Assuming only admins can delete submissions
     ]
