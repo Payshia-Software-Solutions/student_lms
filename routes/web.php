@@ -73,6 +73,8 @@ $CourseBucketRoutes = require_once __DIR__ . '/CourseBucketRoutes.php';
 $CourseBucketContentRoutes = require_once __DIR__ . '/CourseBucketContentRoutes.php';
 $StudentPaymentCourseRoutes = require_once __DIR__ . '/StudentPaymentCourseRoutes.php';
 $PaymentRequestRoutes = require_once __DIR__ . '/PaymentRequestRoutes.php';
+$AssignmentRoutes = require_once __DIR__ . '/AssignmentRoutes.php';
+$AssignmentSubmissionRoutes = require_once __DIR__ . '/AssignmentSubmissionRoutes.php';
 
 
 
@@ -89,6 +91,8 @@ $routes = array_merge(
     $CourseBucketContentRoutes,
     $StudentPaymentCourseRoutes,
     $PaymentRequestRoutes,
+    $AssignmentRoutes,
+    $AssignmentSubmissionRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
