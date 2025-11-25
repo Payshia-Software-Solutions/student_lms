@@ -2,8 +2,12 @@
 
 require_once __DIR__ . '/../controllers/PaymentRequestController.php';
 
+// Load the existing FTP configuration using 'require' to ensure it's loaded every time
+$ftp_config = require __DIR__ . '/../config/ftp.php';
+
 $pdo = $GLOBALS['pdo'];
-$paymentRequestController = new PaymentRequestController($pdo);
+// Pass both the PDO connection and the loaded FTP config to the controller
+$paymentRequestController = new PaymentRequestController($pdo, $ftp_config);
 
 return [
     // Get all records
