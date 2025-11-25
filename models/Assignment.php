@@ -5,7 +5,7 @@ class Assignment
     private $pdo;
 
     // Table name
-    private $table_name = "assignment";
+    private $table_name = "assigment";
 
     // Object Properties
     public $id;
