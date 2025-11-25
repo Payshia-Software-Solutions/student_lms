@@ -2,7 +2,6 @@
 class AssignmentSubmission
 {
     private $pdo;
-    // **FIXED**: Corrected the table name
     private $table_name = "assigment_submition";
 
     public $id;
@@ -15,16 +14,16 @@ class AssignmentSubmission
     public $updated_by;
     public $created_at;
     public $updated_at;
-    public $deleted_at;
+    // **FIXED**: Removed the deleted_at property as it does not exist in the table
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
     }
     
-    // **NEW**: Create table method for consistency
     public static function createTable($db)
     {
+        // **FIXED**: Removed deleted_at from the table definition
         $query = "CREATE TABLE IF NOT EXISTS assigment_submition (
             id INT AUTO_INCREMENT PRIMARY KEY,
             student_number VARCHAR(255) NOT NULL,
@@ -36,7 +35,6 @@ class AssignmentSubmission
             created_by INT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             updated_by INT,
-            deleted_at TIMESTAMP NULL,
             FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id)
         );";
 
@@ -51,7 +49,8 @@ class AssignmentSubmission
     // Get all records
     public function getAll()
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL");
+        // **FIXED**: Removed WHERE clause for soft delete
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -59,7 +58,8 @@ class AssignmentSubmission
     // Get a single record by ID
     public function getById($id)
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND deleted_at IS NULL");
+        // **FIXED**: Removed WHERE clause for soft delete
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -67,6 +67,7 @@ class AssignmentSubmission
     // Get records based on dynamic filters
     public function getByFilters($filters = [])
     {
+        // **FIXED**: Removed WHERE clause for soft delete
         $query = "
             SELECT
                 asub.*,
@@ -75,25 +76,28 @@ class AssignmentSubmission
                 " . $this->table_name . " asub
             LEFT JOIN
                 course_bucket cb ON asub.course_bucket_id = cb.id
-            WHERE
-                asub.deleted_at IS NULL
         ";
 
         $params = [];
+        $where_clauses = [];
 
         if (!empty($filters['student_number'])) {
-            $query .= " AND asub.student_number = :student_number";
+            $where_clauses[] = "asub.student_number = :student_number";
             $params[':student_number'] = $filters['student_number'];
         }
 
         if (!empty($filters['course_id'])) {
-            $query .= " AND cb.course_id = :course_id";
+            $where_clauses[] = "cb.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
         }
 
         if (!empty($filters['course_bucket_id'])) {
-            $query .= " AND asub.course_bucket_id = :course_bucket_id";
+            $where_clauses[] = "asub.course_bucket_id = :course_bucket_id";
             $params[':course_bucket_id'] = $filters['course_bucket_id'];
+        }
+
+        if (!empty($where_clauses)) {
+             $query .= " WHERE " . implode(' AND ', $where_clauses);
         }
         
         $stmt = $this->pdo->prepare($query);
@@ -133,6 +137,7 @@ class AssignmentSubmission
         $userId = $GLOBALS['jwtPayload']->data->id ?? null;
         $data['updated_by'] = $userId;
 
+        // **FIXED**: Removed WHERE clause for soft delete
         $stmt = $this->pdo->prepare("
             UPDATE " . $this->table_name . " SET
                 student_number = :student_number,
@@ -141,7 +146,7 @@ class AssignmentSubmission
                 file_path = :file_path,
                 grade = :grade,
                 updated_by = :updated_by
-            WHERE id = :id AND deleted_at IS NULL
+            WHERE id = :id
         ");
 
         $stmt->execute([
@@ -157,10 +162,10 @@ class AssignmentSubmission
     }
 
 
-    // Soft delete a record
+    // **FIXED**: Changed to a permanent delete as there is no soft delete column
     public function delete($id)
     {
-        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $stmt = $this->pdo->prepare("DELETE FROM " . $this->table_name . " WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->rowCount();
     }
