@@ -2,8 +2,12 @@
 
 require_once __DIR__ . '/../controllers/AssignmentSubmissionController.php';
 
+// Load the existing FTP configuration
+$ftp_config = require_once __DIR__ . '/../config/ftp.php';
+
 $pdo = $GLOBALS['pdo'];
-$assignmentSubmissionController = new AssignmentSubmissionController($pdo);
+// Pass both the PDO connection and the loaded FTP config to the controller
+$assignmentSubmissionController = new AssignmentSubmissionController($pdo, $ftp_config);
 
 return [
     'GET /assignment-submissions/' => [
