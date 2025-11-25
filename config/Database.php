@@ -5,6 +5,8 @@ require_once __DIR__ . '/../models/Province.php';
 require_once __DIR__ . '/../models/District.php';
 require_once __DIR__ . '/../models/City.php';
 require_once __DIR__ . '/../models/Student.php';
+// **NEW**: Include the AssignmentSubmission model
+require_once __DIR__ . '/../models/AssignmentSubmission.php';
 
 class Database
 {
@@ -29,8 +31,8 @@ class Database
             $this->conn = new PDO('mysql:host=' . $this->host . ';dbname=' . $this->db_name, $this->username, $this->password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            // One-time setup logic can be placed here, controlled by a flag or configuration.
-            // For example, you could check if a certain table exists before running setup.
+            // **NEW**: Call the createTable method to ensure the table exists.
+            AssignmentSubmission::createTable($this->conn);
 
         } catch (PDOException $e) {
             // Use error_log for production environments

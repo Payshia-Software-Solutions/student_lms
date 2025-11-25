@@ -2,7 +2,8 @@
 class AssignmentSubmission
 {
     private $pdo;
-    private $table_name = "assignment_submissions";
+    // **FIXED**: Corrected the table name
+    private $table_name = "assigment_submition";
 
     public $id;
     public $student_number;
@@ -14,18 +15,42 @@ class AssignmentSubmission
     public $updated_by;
     public $created_at;
     public $updated_at;
-    public $deleted_at; // Corrected property
-
+    public $deleted_at;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
     }
+    
+    // **NEW**: Create table method for consistency
+    public static function createTable($db)
+    {
+        $query = "CREATE TABLE IF NOT EXISTS assigment_submition (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_number VARCHAR(255) NOT NULL,
+            course_bucket_id INT NOT NULL,
+            assigment_id INT NOT NULL,
+            file_path VARCHAR(255),
+            grade VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by INT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            updated_by INT,
+            deleted_at TIMESTAMP NULL,
+            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id)
+        );";
+
+        try {
+            $stmt = $db->prepare($query);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Table Creation Error (assigment_submition): " . $e->getMessage());
+        }
+    }
 
     // Get all records
     public function getAll()
     {
-        // Corrected to use deleted_at
         $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -34,7 +59,6 @@ class AssignmentSubmission
     // Get a single record by ID
     public function getById($id)
     {
-        // Corrected to use deleted_at
         $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -53,7 +77,7 @@ class AssignmentSubmission
                 course_bucket cb ON asub.course_bucket_id = cb.id
             WHERE
                 asub.deleted_at IS NULL
-        "; // Corrected to use deleted_at
+        ";
 
         $params = [];
 
@@ -118,7 +142,7 @@ class AssignmentSubmission
                 grade = :grade,
                 updated_by = :updated_by
             WHERE id = :id AND deleted_at IS NULL
-        "); // Corrected to use deleted_at
+        ");
 
         $stmt->execute([
             ':id' => $data['id'],
@@ -136,7 +160,6 @@ class AssignmentSubmission
     // Soft delete a record
     public function delete($id)
     {
-        // Corrected to use deleted_at
         $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->rowCount();
