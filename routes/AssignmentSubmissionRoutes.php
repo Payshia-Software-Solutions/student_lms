@@ -10,6 +10,11 @@ $pdo = $GLOBALS['pdo'];
 $assignmentSubmissionController = new AssignmentSubmissionController($pdo, $ftp_config);
 
 return [
+    // **NEW**: Route for filtering submissions. Keep it before the /:id route.
+    'GET /assignment-submissions/filter' => [
+        'handler' => [$assignmentSubmissionController, 'getRecordsByFilter'],
+        'auth' => 'user' // Or 'admin' if this is a privileged action
+    ],
     'GET /assignment-submissions/' => [
         'handler' => [$assignmentSubmissionController, 'getAllRecords'],
         'auth' => 'user' // Assuming only logged-in users can see submissions

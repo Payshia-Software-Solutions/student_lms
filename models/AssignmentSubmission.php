@@ -1,66 +1,85 @@
 <?php
-
 class AssignmentSubmission
 {
     private $pdo;
-    private $table_name = "assigment_submition";
+    private $table_name = "assignment_submissions";
 
-    // Object Properties
     public $id;
     public $student_number;
     public $course_bucket_id;
     public $assigment_id;
     public $file_path;
     public $grade;
-    public $created_at;
     public $created_by;
-    public $updated_at;
     public $updated_by;
-    public $is_active;
+    public $created_at;
+    public $updated_at;
+    public $is_deleted;
+
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
     }
 
-    public static function createTable($pdo)
-    {
-        try {
-            $sql = "
-                CREATE TABLE IF NOT EXISTS assigment_submition (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    student_number VARCHAR(50) NOT NULL,
-                    course_bucket_id INT NOT NULL,
-                    assigment_id INT NOT NULL,
-                    file_path VARCHAR(255),
-                    grade VARCHAR(10),
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    created_by INT,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    updated_by INT,
-                    is_active TINYINT(1) DEFAULT 1
-                );
-            ";
-            $pdo->exec($sql);
-        } catch (PDOException $e) {
-            error_log("Error creating table: " . $e->getMessage());
-        }
-    }
-
+    // Get all records
     public function getAll()
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE is_active = 1");
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE is_deleted = 0");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Get a single record by ID
     public function getById($id)
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND is_active = 1");
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND is_deleted = 0");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // **NEW**: Get records based on dynamic filters
+    public function getByFilters($filters = [])
+    {
+        // Base query with a join to the course_bucket table to allow filtering by course_id
+        $query = "
+            SELECT
+                asub.*,
+                cb.course_id
+            FROM
+                " . $this->table_name . " asub
+            LEFT JOIN
+                course_bucket cb ON asub.course_bucket_id = cb.id
+            WHERE
+                asub.is_deleted = 0
+        ";
+
+        $params = [];
+
+        // Dynamically add WHERE clauses based on the filters provided
+        if (!empty($filters['student_number'])) {
+            $query .= " AND asub.student_number = :student_number";
+            $params[':student_number'] = $filters['student_number'];
+        }
+
+        if (!empty($filters['course_id'])) {
+            $query .= " AND cb.course_id = :course_id";
+            $params[':course_id'] = $filters['course_id'];
+        }
+
+        if (!empty($filters['course_bucket_id'])) {
+            $query .= " AND asub.course_bucket_id = :course_bucket_id";
+            $params[':course_bucket_id'] = $filters['course_bucket_id'];
+        }
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    // Create a new record
     public function create($data)
     {
         $stmt = $this->pdo->prepare("
@@ -83,36 +102,45 @@ class AssignmentSubmission
         return $this->pdo->lastInsertId();
     }
 
+
+    // Update a record
     public function update($id, $data)
     {
-        $fields = [];
-        $params = ['id' => $id];
-        
-        // Add current user to updated_by
-        $data['updated_by'] = $GLOBALS['jwtPayload']->data->id ?? null;
+        $data['id'] = $id;
+        // Get user ID from the global JWT payload if available
+        $userId = $GLOBALS['jwtPayload']->data->id ?? null;
+        $data['updated_by'] = $userId;
 
-        foreach ($data as $key => $value) {
-            if (property_exists($this, $key) && !in_array($key, ['id', 'created_at', 'created_by'])) {
-                $fields[] = "`$key` = :$key";
-                $params[$key] = $value;
-            }
-        }
 
-        if (empty($fields)) {
-            return false;
-        }
+        $stmt = $this->pdo->prepare("
+            UPDATE " . $this->table_name . " SET
+                student_number = :student_number,
+                course_bucket_id = :course_bucket_id,
+                assigment_id = :assigment_id,
+                file_path = :file_path,
+                grade = :grade,
+                updated_by = :updated_by
+            WHERE id = :id AND is_deleted = 0
+        ");
 
-        $setClause = implode(', ', $fields);
-        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET $setClause WHERE id = :id");
-
-        return $stmt->execute($params);
+        $stmt->execute([
+            ':id' => $data['id'],
+            ':student_number' => $data['student_number'],
+            ':course_bucket_id' => $data['course_bucket_id'],
+            ':assigment_id' => $data['assigment_id'],
+            ':file_path' => $data['file_path'] ?? null,
+            ':grade' => $data['grade'] ?? null,
+            ':updated_by' => $userId
+        ]);
+        return $stmt->rowCount();
     }
 
+
+    // Soft delete a record
     public function delete($id)
     {
-        // Soft delete by setting is_active to 0
-        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET is_active = 0, updated_by = ? WHERE id = ?");
-        $userId = $GLOBALS['jwtPayload']->data->id ?? null;
-        return $stmt->execute([$userId, $id]);
+        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET is_deleted = 1 WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->rowCount();
     }
 }
