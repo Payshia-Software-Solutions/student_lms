@@ -30,6 +30,30 @@ class AssignmentSubmissionController
         }
     }
 
+    // **NEW**: Handle requests for filtered assignment submissions
+    public function getRecordsByFilter()
+    {
+        // Sanitize and retrieve filter parameters from the query string
+        $filters = [
+            'student_number' => filter_input(INPUT_GET, 'student_number', FILTER_SANITIZE_STRING),
+            'course_id' => filter_input(INPUT_GET, 'course_id', FILTER_SANITIZE_NUMBER_INT),
+            'course_bucket_id' => filter_input(INPUT_GET, 'course_bucket_id', FILTER_SANITIZE_NUMBER_INT)
+        ];
+
+        // Remove any empty filters so we don't search for them
+        $filters = array_filter($filters);
+
+        $submissions = $this->assignmentSubmission->getByFilters($filters);
+
+        if (!empty($submissions)) {
+            echo json_encode(['status' => 'success', 'data' => $submissions]);
+        } else {
+            // Return a 404 if no records match the criteria
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'No assignment submissions found matching the specified criteria.']);
+        }
+    }
+
     public function createRecord()
     {
         // --- FTP and File Handling ---
