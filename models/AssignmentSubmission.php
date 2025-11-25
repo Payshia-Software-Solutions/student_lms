@@ -2,7 +2,7 @@
 class AssignmentSubmission
 {
     private $pdo;
-    private $table_name = "assignment_submissions";
+    private $table_name = "assigment_submition";
 
     public $id;
     public $student_number;
