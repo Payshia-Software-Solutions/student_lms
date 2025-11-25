@@ -5,7 +5,7 @@ class Assignment
     private $pdo;
 
     // Table name
-    private $table_name = "assignment";
+    private $table_name = "assigment";
 
     // Object Properties
     public $id;
@@ -29,7 +29,7 @@ class Assignment
     {
         try {
             $sql = "
-                CREATE TABLE IF NOT EXISTS assignment (
+                CREATE TABLE IF NOT EXISTS assigment (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     course_id INT NOT NULL,
                     course_bucket_id INT NOT NULL,
