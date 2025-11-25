@@ -7,10 +7,12 @@ class PaymentRequestController
     private $paymentRequest;
     private $ftp_config;
 
-    public function __construct($pdo)
+    // **FIX: Accept FTP config in the constructor**
+    public function __construct($pdo, $ftp_config)
     {
         $this->paymentRequest = new PaymentRequest($pdo);
-        $this->ftp_config = require __DIR__ . '/../config/ftp.php';
+        // **FIX: Use the FTP config that is passed in**
+        $this->ftp_config = $ftp_config;
     }
 
     public function getAllRecords()

@@ -33,6 +33,16 @@ class AssignmentSubmissionController
     public function createRecord()
     {
         // --- FTP and File Handling ---
+
+        // **FIX: Add validation for the FTP configuration**
+        if (!is_array($this->ftp_config) || empty($this->ftp_config['server'])) {
+            http_response_code(500);
+            // Log the faulty config for debugging purposes
+            error_log('AssignmentSubmissionController: Invalid or empty FTP configuration loaded. Value: ' . print_r($this->ftp_config, true));
+            echo json_encode(['status' => 'error', 'message' => 'Server-side FTP configuration error. Please contact an administrator.']);
+            return;
+        }
+
         $ftp_server = $this->ftp_config['server'];
         $ftp_user = $this->ftp_config['user'];
         $ftp_pass = $this->ftp_config['password'];
