@@ -2,7 +2,7 @@
 class AssignmentSubmission
 {
     private $pdo;
-    private $table_name = "assigment_submition";
+    private $table_name = "assignment_submissions";
 
     public $id;
     public $student_number;
@@ -14,7 +14,7 @@ class AssignmentSubmission
     public $updated_by;
     public $created_at;
     public $updated_at;
-    public $is_deleted;
+    public $deleted_at; // Corrected property
 
 
     public function __construct($pdo)
@@ -25,7 +25,8 @@ class AssignmentSubmission
     // Get all records
     public function getAll()
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE is_deleted = 0");
+        // Corrected to use deleted_at
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -33,15 +34,15 @@ class AssignmentSubmission
     // Get a single record by ID
     public function getById($id)
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND is_deleted = 0");
+        // Corrected to use deleted_at
+        $stmt = $this->pdo->prepare("SELECT * FROM " . $this->table_name . " WHERE id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // **NEW**: Get records based on dynamic filters
+    // Get records based on dynamic filters
     public function getByFilters($filters = [])
     {
-        // Base query with a join to the course_bucket table to allow filtering by course_id
         $query = "
             SELECT
                 asub.*,
@@ -51,12 +52,11 @@ class AssignmentSubmission
             LEFT JOIN
                 course_bucket cb ON asub.course_bucket_id = cb.id
             WHERE
-                asub.is_deleted = 0
-        ";
+                asub.deleted_at IS NULL
+        "; // Corrected to use deleted_at
 
         $params = [];
 
-        // Dynamically add WHERE clauses based on the filters provided
         if (!empty($filters['student_number'])) {
             $query .= " AND asub.student_number = :student_number";
             $params[':student_number'] = $filters['student_number'];
@@ -87,7 +87,6 @@ class AssignmentSubmission
             VALUES (:student_number, :course_bucket_id, :assigment_id, :file_path, :grade, :created_by, :updated_by)
         ");
 
-        // Get user ID from the global JWT payload if available
         $userId = $GLOBALS['jwtPayload']->data->id ?? null;
 
         $stmt->execute([
@@ -107,10 +106,8 @@ class AssignmentSubmission
     public function update($id, $data)
     {
         $data['id'] = $id;
-        // Get user ID from the global JWT payload if available
         $userId = $GLOBALS['jwtPayload']->data->id ?? null;
         $data['updated_by'] = $userId;
-
 
         $stmt = $this->pdo->prepare("
             UPDATE " . $this->table_name . " SET
@@ -120,8 +117,8 @@ class AssignmentSubmission
                 file_path = :file_path,
                 grade = :grade,
                 updated_by = :updated_by
-            WHERE id = :id AND is_deleted = 0
-        ");
+            WHERE id = :id AND deleted_at IS NULL
+        "); // Corrected to use deleted_at
 
         $stmt->execute([
             ':id' => $data['id'],
@@ -139,7 +136,8 @@ class AssignmentSubmission
     // Soft delete a record
     public function delete($id)
     {
-        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET is_deleted = 1 WHERE id = ?");
+        // Corrected to use deleted_at
+        $stmt = $this->pdo->prepare("UPDATE " . $this->table_name . " SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->rowCount();
     }
