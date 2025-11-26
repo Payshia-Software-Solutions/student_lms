@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/CourseBucketContent.php';
+require_once __DIR__ . '/../models/Assignment.php';
 
 class CourseBucketContentController
 {
     private $courseBucketContent;
+    private $assignment;
     private $ftp_config;
 
     public function __construct($pdo, $ftp_config)
     {
         $this->courseBucketContent = new CourseBucketContent($pdo);
+        $this->assignment = new Assignment($pdo);
         $this->ftp_config = $ftp_config;
     }
 
@@ -27,6 +30,11 @@ class CourseBucketContentController
     {
         if ($this->courseBucketContent->getById($id)) {
             $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
+            
+            // Fetch related assignments
+            $assignments = $this->assignment->getByCourseAndBucket($this->courseBucketContent->course_id, $this->courseBucketContent->course_bucket_id);
+            $courseBucketContent_item['assignments'] = $assignments;
+
             echo json_encode(['status' => 'success', 'data' => $courseBucketContent_item]);
         } else {
             http_response_code(404);
