@@ -15,40 +15,23 @@ class CourseBucketContentController
 
     public function getAllRecords()
     {
-        $stmt = $this->courseBucketContent->getAll();
-        $courseBucketContents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (isset($_GET['course_id']) && isset($_GET['course_bucket_id'])) {
+            $courseBucketContents = $this->courseBucketContent->getByCourseAndBucket($_GET['course_id'], $_GET['course_bucket_id']);
+        } else {
+            $courseBucketContents = $this->courseBucketContent->getAll();
+        }
         echo json_encode(['status' => 'success', 'data' => $courseBucketContents]);
     }
 
     public function getRecordById($id)
     {
         if ($this->courseBucketContent->getById($id)) {
-            $courseBucketContent_item = [
-                'id' => $this->courseBucketContent->id,
-                'course_id' => $this->courseBucketContent->course_id,
-                'course_bucket_id' => $this->courseBucketContent->course_bucket_id,
-                'content_type' => $this->courseBucketContent->content_type,
-                'content_title' => $this->courseBucketContent->content_title,
-                'content' => $this->courseBucketContent->content,
-                'view_count' => $this->courseBucketContent->view_count,
-                'is_active' => $this->courseBucketContent->is_active,
-                'created_at' => $this->courseBucketContent->created_at,
-                'created_by' => $this->courseBucketContent->created_by,
-                'updated_at' => $this->courseBucketContent->updated_at,
-                'updated_by' => $this->courseBucketContent->updated_by,
-            ];
+            $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
             echo json_encode(['status' => 'success', 'data' => $courseBucketContent_item]);
         } else {
             http_response_code(404);
             echo json_encode(['status' => 'error', 'message' => 'Course bucket content not found']);
         }
-    }
-    
-    public function getRecordsByCourseBucketId($course_bucket_id)
-    {
-        $stmt = $this->courseBucketContent->getByCourseBucketId($course_bucket_id);
-        $contents = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['status' => 'success', 'data' => $contents]);
     }
 
     public function createRecord()
@@ -57,7 +40,6 @@ class CourseBucketContentController
 
         // Check if a file is uploaded
         if (isset($_FILES['file'])) {
-            // If content type requires a file upload, handle it
             $file_url = $this->uploadFileViaFTP($_FILES['file']);
             if ($file_url) {
                 $data['content'] = $file_url;
@@ -70,20 +52,7 @@ class CourseBucketContentController
         $newId = $this->courseBucketContent->create($data);
         if ($newId) {
             if ($this->courseBucketContent->getById($newId)) {
-                $courseBucketContent_item = [
-                    'id' => $this->courseBucketContent->id,
-                    'course_id' => $this->courseBucketContent->course_id,
-                    'course_bucket_id' => $this->courseBucketContent->course_bucket_id,
-                    'content_type' => $this->courseBucketContent->content_type,
-                    'content_title' => $this->courseBucketContent->content_title,
-                    'content' => $this->courseBucketContent->content,
-                    'view_count' => $this->courseBucketContent->view_count,
-                    'is_active' => $this->courseBucketContent->is_active,
-                    'created_at' => $this->courseBucketContent->created_at,
-                    'created_by' => $this->courseBucketContent->created_by,
-                    'updated_at' => $this->courseBucketContent->updated_at,
-                    'updated_by' => $this->courseBucketContent->updated_by,
-                ];
+                $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
                 http_response_code(201);
                 echo json_encode(['status' => 'success', 'message' => 'Course bucket content created successfully', 'data' => $courseBucketContent_item]);
             } else {
@@ -101,20 +70,7 @@ class CourseBucketContentController
         $data = json_decode(file_get_contents('php://input'), true);
         if ($this->courseBucketContent->update($id, $data)) {
             if ($this->courseBucketContent->getById($id)) {
-                $courseBucketContent_item = [
-                    'id' => $this->courseBucketContent->id,
-                    'course_id' => $this->courseBucketContent->course_id,
-                    'course_bucket_id' => $this->courseBucketContent->course_bucket_id,
-                    'content_type' => $this->courseBucketContent->content_type,
-                    'content_title' => $this->courseBucketContent->content_title,
-                    'content' => $this->courseBucketContent->content,
-                    'view_count' => $this->courseBucketContent->view_count,
-                    'is_active' => $this->courseBucketContent->is_active,
-                    'created_at' => $this->courseBucketContent->created_at,
-                    'created_by' => $this->courseBucketContent->created_by,
-                    'updated_at' => $this->courseBucketContent->updated_at,
-                    'updated_by' => $this->courseBucketContent->updated_by,
-                ];
+                $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
                 echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully', 'data' => $courseBucketContent_item]);
             } else {
                  http_response_code(404);
@@ -134,6 +90,26 @@ class CourseBucketContentController
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to delete course bucket content']);
         }
+    }
+    
+    // --- PRIVATE HELPER METHODS ---
+
+    private function buildContentItemResponse($content)
+    {
+        return [
+            'id' => $content->id,
+            'course_id' => $content->course_id,
+            'course_bucket_id' => $content->course_bucket_id,
+            'content_type' => $content->content_type,
+            'content_title' => $content->content_title,
+            'content' => $content->content,
+            'view_count' => $content->view_count,
+            'is_active' => $content->is_active,
+            'created_at' => $content->created_at,
+            'created_by' => $content->created_by,
+            'updated_at' => $content->updated_at,
+            'updated_by' => $content->updated_by,
+        ];
     }
     
     // --- PRIVATE HELPER METHODS FOR FTP ---

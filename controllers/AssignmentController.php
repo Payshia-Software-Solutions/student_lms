@@ -15,7 +15,11 @@ class AssignmentController
 
     public function getAllRecords()
     {
-        $assignments = $this->assignment->getAll();
+        if (isset($_GET['course_id']) && isset($_GET['course_bucket_id'])) {
+            $assignments = $this->assignment->getByCourseAndBucket($_GET['course_id'], $_GET['course_bucket_id']);
+        } else {
+            $assignments = $this->assignment->getAll();
+        }
         echo json_encode(['status' => 'success', 'data' => $assignments]);
     }
 
