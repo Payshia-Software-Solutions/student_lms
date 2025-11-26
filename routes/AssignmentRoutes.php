@@ -2,34 +2,35 @@
 
 require_once __DIR__ . '/../controllers/AssignmentController.php';
 
+$ftp_config = require __DIR__ . '/../config/ftp.php';
 $pdo = $GLOBALS['pdo'];
-$assignmentController = new AssignmentController($pdo);
+$assignmentController = new AssignmentController($pdo, $ftp_config);
 
 return [
     'GET /assignments/' => [
         'handler' => [$assignmentController, 'getAllRecords'],
-        'auth' => 'public'
+        'auth' => 'user'
     ],
-    'GET /assignments/{id}' => [
-        'handler' => function ($params) use ($assignmentController) {
-            $assignmentController->getRecordById($params['id']);
+    'GET /assignments/{id}/' => [
+        'handler' => function ($id) use ($assignmentController) {
+            $assignmentController->getRecordById($id);
         },
-        'auth' => 'public'
+        'auth' => 'user'
     ],
     'POST /assignments/' => [
         'handler' => [$assignmentController, 'createRecord'],
         'auth' => 'user'
     ],
-    'PUT /assignments/{id}' => [
-        'handler' => function ($params) use ($assignmentController) {
-            $assignmentController->updateRecord($params['id']);
+    'PUT /assignments/{id}/' => [
+        'handler' => function ($id) use ($assignmentController) {
+            $assignmentController->updateRecord($id);
         },
         'auth' => 'user'
     ],
-    'DELETE /assignments/{id}' => [
-        'handler' => function ($params) use ($assignmentController) {
-            $assignmentController->deleteRecord($params['id']);
+    'DELETE /assignments/{id}/' => [
+        'handler' => function ($id) use ($assignmentController) {
+            $assignmentController->deleteRecord($id);
         },
-        'auth' => 'user'
+        'auth' => 'admin'
     ]
 ];
