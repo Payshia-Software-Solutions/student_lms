@@ -53,7 +53,26 @@ class CourseBucketContent
     }
 
     // Create a new course bucket content
-   cont
+    public function create($data)
+    {
+        $query = "INSERT INTO course_bucket_content (course_id, course_bucket_id, content_type, content_title, content, is_active, created_by, updated_by) VALUES (:course_id, :course_bucket_id, :content_type, :content_title, :content, :is_active, :created_by, :updated_by)";
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitize and bind parameters
+        $stmt->bindParam(':course_id', $data['course_id']);
+        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
+        $stmt->bindParam(':content_type', $data['content_type']);
+        $stmt->bindParam(':content_title', $data['content_title']);
+        $stmt->bindParam(':content', $data['content']);
+        $stmt->bindParam(':is_active', $data['is_active']);
+        $stmt->bindParam(':created_by', $data['created_by']);
+        $stmt->bindParam(':updated_by', $data['updated_by']);
+
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
+        }
+        return false;
+    }
 
     // Get all course bucket contents
     public function getAll()
