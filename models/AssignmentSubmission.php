@@ -7,7 +7,6 @@ class AssignmentSubmission
     public $id;
     public $student_number;
     public $course_bucket_id;
-    // **FIXED**: Corrected the column name from assigment_id to assignment_id
     public $assignment_id;
     public $file_path;
     public $grade;
@@ -23,7 +22,6 @@ class AssignmentSubmission
     
     public static function createTable($db)
     {
-        // **FIXED**: Corrected the column name in the table definition
         $query = "CREATE TABLE IF NOT EXISTS assigment_submition (
             id INT AUTO_INCREMENT PRIMARY KEY,
             student_number VARCHAR(255) NOT NULL,
@@ -103,11 +101,9 @@ class AssignmentSubmission
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-
     // Create a new record
     public function create($data)
     {
-        // **FIXED**: Corrected the column name in the INSERT statement
         $stmt = $this->pdo->prepare("
             INSERT INTO " . $this->table_name . " (student_number, course_bucket_id, assignment_id, file_path, grade, created_by, updated_by)
             VALUES (:student_number, :course_bucket_id, :assignment_id, :file_path, :grade, :created_by, :updated_by)
@@ -127,15 +123,13 @@ class AssignmentSubmission
         return $this->pdo->lastInsertId();
     }
 
-
-    // Update a record
+    // Update a full record
     public function update($id, $data)
     {
         $data['id'] = $id;
         $userId = $GLOBALS['jwtPayload']->data->id ?? null;
         $data['updated_by'] = $userId;
 
-        // **FIXED**: Corrected the column name in the UPDATE statement
         $stmt = $this->pdo->prepare("
             UPDATE " . $this->table_name . " SET
                 student_number = :student_number,
@@ -159,8 +153,36 @@ class AssignmentSubmission
         return $stmt->rowCount();
     }
 
+    // **NEW**: Update specific fields of a record
+    public function patch($id, $data)
+    {
+        $userId = $GLOBALS['jwtPayload']->data->id ?? null;
+        
+        $fields = [];
+        $params = ['id' => $id, 'updated_by' => $userId];
 
-    // Changed to a permanent delete as there is no soft delete column
+        foreach ($data as $key => $value) {
+            if ($key === 'id') continue; // Skip id field
+            $fields[] = "$key = :$key";
+            $params[$key] = $value;
+        }
+        
+        if (empty($fields)) {
+            return 0; // No fields to update
+        }
+
+        // Always update the 'updated_by' field
+        $fields[] = "updated_by = :updated_by";
+
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $fields) . " WHERE id = :id";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+
+        return $stmt->rowCount();
+    }
+
+    // Permanent delete
     public function delete($id)
     {
         $stmt = $this->pdo->prepare("DELETE FROM " . $this->table_name . " WHERE id = ?");
