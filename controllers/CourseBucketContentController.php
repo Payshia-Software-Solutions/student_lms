@@ -41,6 +41,17 @@ class CourseBucketContentController
             echo json_encode(['status' => 'error', 'message' => 'Course bucket content not found']);
         }
     }
+    
+    // **NEW**: Get all records for a specific course bucket
+    public function getRecordsByCourseBucketId($course_bucket_id)
+    {
+        $stmt = $this->courseBucketContent->getByCourseBucketId($course_bucket_id);
+        $contents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Even if no content is found, return a success status with an empty array
+        // This is because an empty list of content is a valid response
+        echo json_encode(['status' => 'success', 'data' => $contents]);
+    }
 
     public function createRecord()
     {
