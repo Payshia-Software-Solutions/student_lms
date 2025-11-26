@@ -2,8 +2,9 @@
 
 require_once __DIR__ . '/../controllers/CourseBucketContentController.php';
 
+$ftp_config = require __DIR__ . '/../config/ftp.php';
 $pdo = $GLOBALS['pdo'];
-$courseBucketContentController = new CourseBucketContentController($pdo);
+$courseBucketContentController = new CourseBucketContentController($pdo, $ftp_config);
 
 return [
     'GET /course-bucket-contents/' => [
@@ -16,7 +17,6 @@ return [
         },
         'auth' => 'user'
     ],
-    // **NEW**: Route to get all content for a specific course bucket
     'GET /course-bucket-contents/bucket/{id}/' => [
         'handler' => function ($id) use ($courseBucketContentController) {
             $courseBucketContentController->getRecordsByCourseBucketId($id);

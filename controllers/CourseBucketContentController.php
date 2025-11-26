@@ -5,10 +5,12 @@ require_once __DIR__ . '/../models/CourseBucketContent.php';
 class CourseBucketContentController
 {
     private $courseBucketContent;
+    private $ftp_config;
 
-    public function __construct($pdo)
+    public function __construct($pdo, $ftp_config)
     {
         $this->courseBucketContent = new CourseBucketContent($pdo);
+        $this->ftp_config = $ftp_config;
     }
 
     public function getAllRecords()
@@ -42,20 +44,29 @@ class CourseBucketContentController
         }
     }
     
-    // **NEW**: Get all records for a specific course bucket
     public function getRecordsByCourseBucketId($course_bucket_id)
     {
         $stmt = $this->courseBucketContent->getByCourseBucketId($course_bucket_id);
         $contents = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Even if no content is found, return a success status with an empty array
-        // This is because an empty list of content is a valid response
         echo json_encode(['status' => 'success', 'data' => $contents]);
     }
 
     public function createRecord()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = json_decode($_POST['data'], true);
+
+        // Check if a file is uploaded
+        if (isset($_FILES['file'])) {
+            // If content type requires a file upload, handle it
+            $file_url = $this->uploadFileViaFTP($_FILES['file']);
+            if ($file_url) {
+                $data['content'] = $file_url;
+            } else {
+                // Error response is handled in uploadFileViaFTP
+                return;
+            }
+        }
+
         $newId = $this->courseBucketContent->create($data);
         if ($newId) {
             if ($this->courseBucketContent->getById($newId)) {
@@ -123,5 +134,49 @@ class CourseBucketContentController
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Unable to delete course bucket content']);
         }
+    }
+    
+    // --- PRIVATE HELPER METHODS FOR FTP ---
+
+    private function uploadFileViaFTP($file)
+    {
+        $ftp_server = $this->ftp_config['server'];
+        $ftp_user = $this->ftp_config['user'];
+        $ftp_pass = $this->ftp_config['password'];
+        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
+        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        $tmp_path = $file['tmp_name'];
+
+        $conn_id = ftp_connect($ftp_server);
+        if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
+            return false;
+        }
+        
+        ftp_pasv($conn_id, true);
+
+        $upload_directory_name = 'course_content_files'; // <-- Changed directory name
+        $remote_dir = $ftp_root . '/' . $upload_directory_name;
+
+        if (!@ftp_chdir($conn_id, $remote_dir) && !ftp_mkdir($conn_id, $remote_dir)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to create directory on FTP server.']);
+            ftp_close($conn_id);
+            return false;
+        }
+
+        $file_name = uniqid() . '-' . basename($file['name']);
+        $remote_path = $remote_dir . '/' . $file_name;
+
+        if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP file upload failed.']);
+            ftp_close($conn_id);
+            return false;
+        }
+
+        ftp_close($conn_id);
+        return $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
     }
 }
