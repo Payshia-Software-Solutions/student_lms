@@ -17,12 +17,6 @@ return [
         },
         'auth' => 'user'
     ],
-    'GET /course-bucket-contents/bucket/{id}/' => [
-        'handler' => function ($id) use ($courseBucketContentController) {
-            $courseBucketContentController->getRecordsByCourseBucketId($id);
-        },
-        'auth' => 'user'
-    ],
     'POST /course-bucket-contents/' => [
         'handler' => [$courseBucketContentController, 'createRecord'],
         'auth' => 'user'

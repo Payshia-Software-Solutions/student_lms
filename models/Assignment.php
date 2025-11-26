@@ -82,6 +82,15 @@ class Assignment
         return null;
     }
 
+    // Get assignments by course_id and course_bucket_id
+    public function getByCourseAndBucket($course_id, $course_bucket_id)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE course_id = ? AND course_bucket_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$course_id, $course_bucket_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function create($data)
     {
         $stmt = $this->pdo->prepare("
