@@ -1,14 +1,20 @@
 <?php
 
 require_once __DIR__ . '/../models/CourseBucket.php';
+require_once __DIR__ . '/../models/Assignment.php';
+require_once __DIR__ . '/../models/CourseBucketContent.php';
 
 class CourseBucketController
 {
     private $courseBucket;
+    private $assignment;
+    private $courseBucketContent;
 
     public function __construct($pdo)
     {
         $this->courseBucket = new CourseBucket($pdo);
+        $this->assignment = new Assignment($pdo);
+        $this->courseBucketContent = new CourseBucketContent($pdo);
     }
 
     public function getAllRecords()
@@ -18,16 +24,35 @@ class CourseBucketController
         echo json_encode(['status' => 'success', 'data' => $courseBuckets]);
     }
 
+    public function getRecordsByCourseId($course_id)
+    {
+        $courseBuckets = $this->courseBucket->getByCourseId($course_id);
+        $result = [];
+
+        foreach ($courseBuckets as $bucket) {
+            $bucket_id = $bucket['id'];
+            
+            // Fetch assignments for the current bucket
+            $assignments = $this->assignment->getByCourseAndBucket($course_id, $bucket_id);
+            $bucket['assignments'] = $assignments;
+
+            // Fetch contents for the current bucket
+            $contents = $this->courseBucketContent->getByCourseAndBucket($course_id, $bucket_id);
+            $bucket['contents'] = $contents;
+
+            $result[] = $bucket;
+        }
+
+        echo json_encode(['status' => 'success', 'data' => $result]);
+    }
+
     public function getRecordById($id)
     {
         if ($this->courseBucket->getById($id)) {
             $courseBucket_item = [
                 'id' => $this->courseBucket->id,
+                'bucket_name' => $this->courseBucket->bucket_name,
                 'course_id' => $this->courseBucket->course_id,
-                'name' => $this->courseBucket->name,
-                'description' => $this->courseBucket->description,
-                'payment_type' => $this->courseBucket->payment_type,
-                'payment_amount' => $this->courseBucket->payment_amount,
                 'is_active' => $this->courseBucket->is_active,
                 'created_at' => $this->courseBucket->created_at,
                 'created_by' => $this->courseBucket->created_by,
@@ -41,36 +66,17 @@ class CourseBucketController
         }
     }
 
-    public function getRecordsByCourseId($course_id)
-    {
-        $stmt = $this->courseBucket->getByCourseId($course_id);
-        if ($stmt) {
-            $courseBuckets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if ($courseBuckets) {
-                echo json_encode(['status' => 'success', 'data' => $courseBuckets]);
-            } else {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'No course buckets found for this course.']);
-            }
-        } else {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve course buckets.']);
-        }
-    }
-
     public function createRecord()
     {
         $data = json_decode(file_get_contents('php://input'), true);
         $newId = $this->courseBucket->create($data);
+
         if ($newId) {
             if ($this->courseBucket->getById($newId)) {
                 $courseBucket_item = [
                     'id' => $this->courseBucket->id,
+                    'bucket_name' => $this->courseBucket->bucket_name,
                     'course_id' => $this->courseBucket->course_id,
-                    'name' => $this->courseBucket->name,
-                    'description' => $this->courseBucket->description,
-                    'payment_type' => $this->courseBucket->payment_type,
-                    'payment_amount' => $this->courseBucket->payment_amount,
                     'is_active' => $this->courseBucket->is_active,
                     'created_at' => $this->courseBucket->created_at,
                     'created_by' => $this->courseBucket->created_by,
@@ -96,11 +102,8 @@ class CourseBucketController
             if ($this->courseBucket->getById($id)) {
                 $courseBucket_item = [
                     'id' => $this->courseBucket->id,
+                    'bucket_name' => $this->courseBucket->bucket_name,
                     'course_id' => $this->courseBucket->course_id,
-                    'name' => $this->courseBucket->name,
-                    'description' => $this->courseBucket->description,
-                    'payment_type' => $this->courseBucket->payment_type,
-                    'payment_amount' => $this->courseBucket->payment_amount,
                     'is_active' => $this->courseBucket->is_active,
                     'created_at' => $this->courseBucket->created_at,
                     'created_by' => $this->courseBucket->created_by,
@@ -109,7 +112,7 @@ class CourseBucketController
                 ];
                 echo json_encode(['status' => 'success', 'message' => 'Course bucket updated successfully', 'data' => $courseBucket_item]);
             } else {
-                http_response_code(404);
+                 http_response_code(404);
                 echo json_encode(['status' => 'error', 'message' => 'Course bucket not found after update']);
             }
         } else {
