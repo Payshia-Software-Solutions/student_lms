@@ -7,7 +7,7 @@ class AssignmentSubmission
     public $id;
     public $student_number;
     public $course_bucket_id;
-    public $assignment_id;
+    public $assigment_id;
     public $file_path;
     public $grade;
     public $created_by;
@@ -26,7 +26,7 @@ class AssignmentSubmission
             id INT AUTO_INCREMENT PRIMARY KEY,
             student_number VARCHAR(255) NOT NULL,
             course_bucket_id INT NOT NULL,
-            assignment_id INT NOT NULL,
+            assigment_id INT NOT NULL,
             file_path VARCHAR(255),
             grade VARCHAR(50),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -105,8 +105,8 @@ class AssignmentSubmission
     public function create($data)
     {
         $stmt = $this->pdo->prepare("
-            INSERT INTO " . $this->table_name . " (student_number, course_bucket_id, assignment_id, file_path, grade, created_by, updated_by)
-            VALUES (:student_number, :course_bucket_id, :assignment_id, :file_path, :grade, :created_by, :updated_by)
+            INSERT INTO " . $this->table_name . " (student_number, course_bucket_id, assigment_id, file_path, grade, created_by, updated_by)
+            VALUES (:student_number, :course_bucket_id, :assigment_id, :file_path, :grade, :created_by, :updated_by)
         ");
 
         $userId = $GLOBALS['jwtPayload']->data->id ?? null;
@@ -114,7 +114,7 @@ class AssignmentSubmission
         $stmt->execute([
             ':student_number' => $data['student_number'],
             ':course_bucket_id' => $data['course_bucket_id'],
-            ':assignment_id' => $data['assignment_id'],
+            ':assigment_id' => $data['assigment_id'],
             ':file_path' => $data['file_path'] ?? null,
             ':grade' => $data['grade'] ?? null,
             ':created_by' => $userId,
@@ -134,7 +134,7 @@ class AssignmentSubmission
             UPDATE " . $this->table_name . " SET
                 student_number = :student_number,
                 course_bucket_id = :course_bucket_id,
-                assignment_id = :assignment_id,
+                assigment_id = :assigment_id,
                 file_path = :file_path,
                 grade = :grade,
                 updated_by = :updated_by
@@ -145,7 +145,7 @@ class AssignmentSubmission
             ':id' => $data['id'],
             ':student_number' => $data['student_number'],
             ':course_bucket_id' => $data['course_bucket_id'],
-            ':assignment_id' => $data['assignment_id'],
+            ':assigment_id' => $data['assigment_id'],
             ':file_path' => $data['file_path'] ?? null,
             ':grade' => $data['grade'] ?? null,
             ':updated_by' => $userId
