@@ -9,6 +9,32 @@ class AssignmentSubmission
         $this->pdo = $pdo;
     }
 
+    public static function createTable($db)
+    {
+        $query = "
+            CREATE TABLE IF NOT EXISTS `assigment_submition` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `student_number` VARCHAR(255) NOT NULL,
+                `course_bucket_id` INT NOT NULL,
+                `assigment_id` INT NOT NULL,
+                `file_path` VARCHAR(2048) NOT NULL,
+                `grade` VARCHAR(50) DEFAULT NULL,
+                `sub_count` INT DEFAULT 1,
+                `sub_status` VARCHAR(50) DEFAULT 'submitted',
+                `created_by` INT,
+                `updated_by` INT,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+        ";
+        try {
+            $db->exec($query);
+        } catch (PDOException $e) {
+            error_log("Failed to create table assigment_submition: " . $e->getMessage());
+            die("Failed to create table assigment_submition. Please check error logs.");
+        }
+    }
+
     public function getAll()
     {
         $query = "SELECT * FROM " . $this->table_name;
@@ -37,7 +63,6 @@ class AssignmentSubmission
             LEFT JOIN
                 course_bucket cb ON asub.course_bucket_id = cb.id
         ";
-
         $params = [];
         $where_clauses = [];
 
@@ -64,7 +89,6 @@ class AssignmentSubmission
         
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($params);
-
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -72,39 +96,25 @@ class AssignmentSubmission
     {
         $query = "INSERT INTO " . $this->table_name . " (student_number, course_bucket_id, assigment_id, file_path, sub_count, sub_status, created_by, updated_by) VALUES (:student_number, :course_bucket_id, :assigment_id, :file_path, :sub_count, :sub_status, :created_by, :updated_by)";
         $stmt = $this->pdo->prepare($query);
+        
+        // Set default values if not provided
+        $created_by = $data['created_by'] ?? null;
+        $updated_by = $data['updated_by'] ?? null;
 
-        // Bind parameters
         $stmt->bindParam(':student_number', $data['student_number']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
         $stmt->bindParam(':assigment_id', $data['assigment_id']);
         $stmt->bindParam(':file_path', $data['file_path']);
         $stmt->bindParam(':sub_count', $data['sub_count']);
         $stmt->bindParam(':sub_status', $data['sub_status']);
-        $stmt->bindParam(':created_by', $data['created_by']);
-        $stmt->bindParam(':updated_by', $data['updated_by']);
+        $stmt->bindParam(':created_by', $created_by);
+        $stmt->bindParam(':updated_by', $updated_by);
 
         if ($stmt->execute()) {
             return $this->pdo->lastInsertId();
         } else {
             $errorInfo = $stmt->errorInfo();
             error_log("SQL Error on create for assigment_submition: " . $errorInfo[2]);
-            return false;
-        }
-    }
-
-    public function update($id, $data)
-    {
-        // This is a full update, so we expect all fields.
-        $query = "UPDATE " . $this->table_name . " SET student_number = :student_number, course_bucket_id = :course_bucket_id, assigment_id = :assigment_id, file_path = :file_path, grade = :grade, sub_count = :sub_count, sub_status = :sub_status, updated_by = :updated_by, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
-        $stmt = $this->pdo->prepare($query);
-
-        $params = array_merge($data, ['id' => $id]);
-
-        if ($stmt->execute($params)) {
-            return true;
-        } else {
-            $errorInfo = $stmt->errorInfo();
-            error_log("SQL Error on update for assigment_submition ID {$id}: " . $errorInfo[2]);
             return false;
         }
     }
