@@ -120,25 +120,13 @@ class AssignmentSubmission
 
     public function update($id, $data)
     {
-        $query = "UPDATE " . $this->table_name . " SET student_number = :student_number, course_bucket_id = :course_bucket_id, assigment_id = :assigment_id, file_path = :file_path, grade = :grade, sub_count = :sub_count, sub_status = :sub_status, updated_by = :updated_by, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
-        $stmt = $this->pdo->prepare($query);
-
-        $data['id'] = $id;
-
-        if ($stmt->execute($data)) {
-            return true;
-        } else {
-            $errorInfo = $stmt->errorInfo();
-            error_log("SQL Error on update for assigment_submition ID {$id}: " . $errorInfo[2]);
+        if (empty($data)) {
             return false;
         }
-    }
 
-    public function patch($id, $data)
-    {
         $set_clauses = [];
         $params = ['id' => $id];
-        $allowed_columns = ['file_path', 'grade', 'sub_count', 'sub_status', 'updated_by'];
+        $allowed_columns = ['student_number', 'course_bucket_id', 'assigment_id', 'file_path', 'grade', 'sub_count', 'sub_status', 'updated_by'];
 
         foreach ($data as $key => $value) {
             if (in_array($key, $allowed_columns)) {
@@ -148,22 +136,26 @@ class AssignmentSubmission
         }
 
         if (empty($set_clauses)) {
-            error_log("Patch failed: No valid fields provided for update on ID {$id}");
+            error_log("Update failed: No valid fields provided for update on ID {$id}");
             return false;
         }
 
-        $set_clauses[] = "updated_at = CURRENT_TIMESTAMP";
-
-        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $set_clauses) . " WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $set_clauses) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id";
         
         $stmt = $this->pdo->prepare($query);
 
         try {
             return $stmt->execute($params);
         } catch (PDOException $e) {
-            error_log("PDOException on patch for assigment_submition ID {$id}: " . $e->getMessage());
+            error_log("PDOException on update for assigment_submition ID {$id}: " . $e->getMessage());
             return false;
         }
+    }
+
+    public function patch($id, $data)
+    {
+        // This function is now similar to update, but we keep it for semantic clarity (PATCH vs PUT)
+        return $this->update($id, $data);
     }
 
     public function delete($id)
