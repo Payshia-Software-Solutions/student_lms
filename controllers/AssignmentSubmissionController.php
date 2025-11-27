@@ -16,11 +16,46 @@ class AssignmentSubmissionController
         $this->ftp_config = $ftp_config;
     }
 
-    // ... other functions ...
+    public function getAllRecords()
+    {
+        $submissions = $this->assignmentSubmission->getAll();
+        echo json_encode(['status' => 'success', 'data' => $submissions]);
+    }
+
+    public function getRecordById($id)
+    {
+        $submission = $this->assignmentSubmission->getById($id);
+        if ($submission) {
+            echo json_encode(['status' => 'success', 'data' => $submission]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Assignment submission not found']);
+        }
+    }
+
+    public function getRecordsByFilter()
+    {
+        $filters = [
+            'student_number' => filter_input(INPUT_GET, 'student_number', FILTER_SANITIZE_STRING),
+            'course_id' => filter_input(INPUT_GET, 'course_id', FILTER_SANITIZE_NUMBER_INT),
+            'course_bucket_id' => filter_input(INPUT_GET, 'course_bucket_id', FILTER_SANITIZE_NUMBER_INT),
+            'assigment_id' => filter_input(INPUT_GET, 'assigment_id', FILTER_SANITIZE_NUMBER_INT)
+        ];
+
+        $filters = array_filter($filters);
+
+        $submissions = $this->assignmentSubmission->getByFilters($filters);
+
+        if (!empty($submissions)) {
+            echo json_encode(['status' => 'success', 'data' => $submissions]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'No assignment submissions found matching the specified criteria.']);
+        }
+    }
 
     public function createRecord()
     {
-        // --- Configuration & Input Validation ---
         if (!is_array($this->ftp_config) || empty($this->ftp_config['server'])) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Server-side FTP configuration error.']);
@@ -43,7 +78,6 @@ class AssignmentSubmissionController
             return;
         }
 
-        // 1. Get Assignment Data for Submission Limit
         $assignment = $this->assignment->getById($assigment_id);
         if (!$assignment) {
             http_response_code(404);
@@ -52,26 +86,20 @@ class AssignmentSubmissionController
         }
         $submission_limit = $assignment['submition_count'];
 
-        // 2. Check for Existing Submissions using getByFilters
         $existingSubmissions = $this->assignmentSubmission->getByFilters([
             'student_number' => $student_number,
             'assigment_id' => $assigment_id
         ]);
         
-        // 3. Handle Re-submission or New Submission
         if (!empty($existingSubmissions)) {
-            // --- This is a RE-SUBMISSION ---
-            $existingSubmission = $existingSubmissions[0]; // Assuming one submission record per student/assignment
+            $existingSubmission = $existingSubmissions[0]; 
 
-            // 4. Enforce Submission Limit
             if ($existingSubmission['sub_count'] >= $submission_limit) {
-                http_response_code(403); // Forbidden
+                http_response_code(403);
                 echo json_encode(['status' => 'error', 'message' => 'Submission limit reached. You cannot submit this assignment again.']);
                 return;
             }
 
-            // --- Re-submission Logic (Update Existing) ---
-            // Previous file is NOT deleted to keep submission history
             $new_file_url = $this->uploadFileViaFTP($_FILES['assignment_file']); 
             if (!$new_file_url) return;
 
@@ -90,7 +118,6 @@ class AssignmentSubmissionController
             }
 
         } else {
-            // --- This is a NEW SUBMISSION ---
             if (0 >= $submission_limit) {
                  http_response_code(403);
                  echo json_encode(['status' => 'error', 'message' => 'This assignment does not accept submissions.']);
@@ -101,7 +128,7 @@ class AssignmentSubmissionController
             if (!$file_url) return;
 
             $data['file_path'] = $file_url;
-            $data['sub_count'] = 1; // First submission
+            $data['sub_count'] = 1;
             $data['sub_status'] = 'submitted';
 
             $newId = $this->assignmentSubmission->create($data);
@@ -119,9 +146,32 @@ class AssignmentSubmissionController
     
     public function updateSubmissionFile($id)
     {
-        // ... (validation) ...
+        if (!isset($_FILES['assignment_file'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'No new assignment file was uploaded.']);
+            return;
+        }
+
+        $existingSubmission = $this->assignmentSubmission->getById($id);
+        if (!$existingSubmission) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Assignment submission not found.']);
+            return;
+        }
+
+        $assignment = $this->assignment->getById($existingSubmission['assigment_id']);
+        if (!$assignment) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Associated assignment not found.']);
+            return;
+        }
+
+        if ($existingSubmission['sub_count'] >= $assignment['submition_count']) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Submission limit reached. You cannot update this assignment file.']);
+            return;
+        }
         
-        // Previous file is NOT deleted to keep submission history
         $new_file_url = $this->uploadFileViaFTP($_FILES['assignment_file']);
         if (!$new_file_url) return;
 
@@ -139,35 +189,125 @@ class AssignmentSubmissionController
         }
     }
 
-    // ... (other functions) ...
+    public function updateRecord($id)
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if ($this->assignmentSubmission->update($id, $data)) {
+            $submission = $this->assignmentSubmission->getById($id);
+            echo json_encode(['status' => 'success', 'message' => 'Assignment submission updated successfully', 'data' => $submission]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to update assignment submission']);
+        }
+    }
+
+    public function updateSubmissionStatus()
+    {
+        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+        $status = filter_input(INPUT_GET, 'status', FILTER_SANITIZE_STRING);
+
+        if (!$id || !$status) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Missing id or status parameter.']);
+            return;
+        }
+
+        $allowed_statuses = ['submitted', 'graded', 'rejected'];
+        if (!in_array($status, $allowed_statuses)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid submission status.']);
+            return;
+        }
+
+        $existingSubmission = $this->assignmentSubmission->getById($id);
+        if (!$existingSubmission) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Assignment submission not found.']);
+            return;
+        }
+
+        $updateData = ['sub_status' => $status];
+        if ($this->assignmentSubmission->patch($id, $updateData)) {
+            $updatedSubmission = $this->assignmentSubmission->getById($id);
+            echo json_encode(['status' => 'success', 'message' => 'Submission status updated successfully', 'data' => $updatedSubmission]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update submission status in the database.']);
+        }
+    }
+
+    public function deleteRecord($id)
+    {
+        $submission = $this->assignmentSubmission->getById($id);
+        if ($submission && !empty($submission['file_path'])) {
+            $this->deleteFileViaFTP($submission['file_path']);
+        }
+
+        if ($this->assignmentSubmission->delete($id)) {
+            echo json_encode(['status' => 'success', 'message' => 'Assignment submission deleted permanently']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to delete assignment submission record.']);
+        }
+    }
 
     private function uploadFileViaFTP($file)
     {
-        // ... (connection logic) ...
-
-        // Sanitize the filename to prevent issues with spaces and special characters
-        $original_filename = basename($file['name']);
-        $sanitized_filename = preg_replace('/[^A-Za-z0-9\._-]', '', str_replace(' ', '_', $original_filename));
-        $file_name = uniqid() . '-' . $sanitized_filename;
-        $remote_path = $remote_dir . '/' . $file_name;
-
-        // ... (upload logic) ...
-        
-        return $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
-    }
-
-    private function deleteFileViaFTP($file_url)
-    {
-        // This function is no longer called on re-submission but is kept for other potential uses.
         $ftp_server = $this->ftp_config['server'];
         $ftp_user = $this->ftp_config['user'];
         $ftp_pass = $this->ftp_config['password'];
         $ftp_root = rtrim($this->ftp_config['root_path'], '/');
         $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        $tmp_path = $file['tmp_name'];
 
+        $conn_id = ftp_connect($ftp_server);
+        if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
+            return false;
+        }
+        
+        ftp_pasv($conn_id, true);
+
+        $upload_directory_name = 'assignment_submissions';
+        $remote_dir = $ftp_root . '/' . $upload_directory_name;
+
+        if (!@is_dir("ftp://$ftp_user:$ftp_pass@$ftp_server/$remote_dir")) {
+            if (!@ftp_mkdir($conn_id, $remote_dir)) {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => "Failed to create directory on FTP server: $remote_dir"]);
+                ftp_close($conn_id);
+                return false;
+            }
+        }
+
+        $original_filename = basename($file['name']);
+        $sanitized_filename = preg_replace('/[^A-Za-z0-9\._-]/', '_', str_replace(' ', '_', $original_filename));
+        $file_name = uniqid() . '-' . $sanitized_filename;
+        $remote_path = $remote_dir . '/' . $file_name;
+
+        if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
+            http_response_code(500);
+            error_log("FTP upload failed. Tried to upload to: " . $remote_path); 
+            echo json_encode(['status' => 'error', 'message' => 'FTP file upload failed.']);
+            ftp_close($conn_id);
+            return false;
+        }
+
+        ftp_close($conn_id);
+        return $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
+    }
+
+    private function deleteFileViaFTP($file_url)
+    {
+        $ftp_server = $this->ftp_config['server'];
+        $ftp_user = $this->ftp_config['user'];
+        $ftp_pass = $this->ftp_config['password'];
+        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
+        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        
         $relative_path = str_replace($public_url_base, '', $file_url);
-        $decoded_path = urldecode($relative_path);
-        $remote_path = $ftp_root . $decoded_path;
+        $remote_file_path = $ftp_root . urldecode($relative_path);
 
         $conn_id = ftp_connect($ftp_server);
         if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
@@ -175,8 +315,8 @@ class AssignmentSubmissionController
             return false;
         }
 
-        if (!@ftp_delete($conn_id, $remote_path)) {
-            error_log("Could not delete FTP file: {$remote_path}");
+        if (!@ftp_delete($conn_id, $remote_file_path)) {
+            error_log("Could not delete FTP file: {$remote_file_path}");
         }
 
         ftp_close($conn_id);
