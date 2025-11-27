@@ -16,6 +16,7 @@ class Assignment
     public $content;
     public $file_url; // New property
     public $view_count;
+    public $submition_count; // New property
     public $created_at;
     public $created_by;
     public $updated_at;
@@ -39,6 +40,7 @@ class Assignment
                     content TEXT NOT NULL,
                     file_url VARCHAR(255) NULL, -- Added file_url
                     view_count INT DEFAULT 0,
+                    submition_count INT DEFAULT 3, -- Added submition_count
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     created_by INT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -73,6 +75,7 @@ class Assignment
             $this->content = $assignment['content'];
             $this->file_url = $assignment['file_url'];
             $this->view_count = $assignment['view_count'];
+            $this->submition_count = $assignment['submition_count'];
             $this->created_at = $assignment['created_at'];
             $this->created_by = $assignment['created_by'];
             $this->updated_at = $assignment['updated_at'];
@@ -94,8 +97,8 @@ class Assignment
     public function create($data)
     {
         $stmt = $this->pdo->prepare("
-            INSERT INTO " . $this->table_name . " (course_id, course_bucket_id, content_type, content_title, content, file_url, created_by, updated_by)
-            VALUES (:course_id, :course_bucket_id, :content_type, :content_title, :content, :file_url, :created_by, :updated_by)
+            INSERT INTO " . $this->table_name . " (course_id, course_bucket_id, content_type, content_title, content, file_url, submition_count, created_by, updated_by)
+            VALUES (:course_id, :course_bucket_id, :content_type, :content_title, :content, :file_url, :submition_count, :created_by, :updated_by)
         ");
 
         $stmt->execute([
@@ -105,6 +108,7 @@ class Assignment
             ':content_title' => $data['content_title'],
             ':content' => $data['content'],
             ':file_url' => $data['file_url'] ?? null,
+            ':submition_count' => $data['submition_count'] ?? 3,
             ':created_by' => $data['created_by'] ?? null,
             ':updated_by' => $data['updated_by'] ?? null
         ]);

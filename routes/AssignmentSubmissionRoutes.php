@@ -25,17 +25,20 @@ return [
         'handler' => [$assignmentSubmissionController, 'createRecord'],
         'auth' => 'user'
     ],
-    // **NEW**: Route for updating the submission file
     'POST /assignment-submissions/{id}/update-file/' => [
         'handler' => function ($id) use ($assignmentSubmissionController) {
             $assignmentSubmissionController->updateSubmissionFile($id);
         },
-        'auth' => 'user' // Or 'admin' depending on who can update
+        'auth' => 'user'
     ],
     'PUT /assignment-submissions/{id}/' => [
         'handler' => function ($id) use ($assignmentSubmissionController) {
             $assignmentSubmissionController->updateRecord($id);
         },
+        'auth' => 'user'
+    ],
+    'PUT /assignment-submissions/update-status/' => [
+        'handler' => [$assignmentSubmissionController, 'updateSubmissionStatus'],
         'auth' => 'user'
     ],
     'DELETE /assignment-submissions/{id}/' => [
