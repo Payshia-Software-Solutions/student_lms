@@ -37,7 +37,7 @@ return [
         },
         'auth' => 'user'
     ],
-    'PUT /assignment-submissions/update-status/' => [
+    'PUT /assignment-submissions/update/status/' => [
         'handler' => [$assignmentSubmissionController, 'updateSubmissionStatus'],
         'auth' => 'user'
     ],
