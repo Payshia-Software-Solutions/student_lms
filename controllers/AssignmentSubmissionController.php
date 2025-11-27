@@ -16,6 +16,7 @@ class AssignmentSubmissionController
         $this->ftp_config = $ftp_config;
     }
 
+    // ... other functions are unchanged ...
     public function getAllRecords()
     {
         $submissions = $this->assignmentSubmission->getAll();
@@ -56,6 +57,7 @@ class AssignmentSubmissionController
 
     public function createRecord()
     {
+        // Initial validation and setup
         if (!is_array($this->ftp_config) || empty($this->ftp_config['server'])) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Server-side FTP configuration error.']);
@@ -78,6 +80,7 @@ class AssignmentSubmissionController
             return;
         }
 
+        // Get assignment details to check the submission limit
         $assignment = $this->assignment->getById($assigment_id);
         if (!$assignment) {
             http_response_code(404);
@@ -86,66 +89,55 @@ class AssignmentSubmissionController
         }
         $submission_limit = $assignment['submition_count'];
 
+        // Get existing submissions to count them
         $existingSubmissions = $this->assignmentSubmission->getByFilters([
             'student_number' => $student_number,
             'assigment_id' => $assigment_id
         ]);
         
-        if (!empty($existingSubmissions)) {
-            $existingSubmission = $existingSubmissions[0]; 
+        $current_submission_count = count($existingSubmissions);
 
-            if ($existingSubmission['sub_count'] >= $submission_limit) {
-                http_response_code(403);
-                echo json_encode(['status' => 'error', 'message' => 'Submission limit reached. You cannot submit this assignment again.']);
-                return;
-            }
+        // Check if the student has reached the submission limit
+        if ($submission_limit > 0 && $current_submission_count >= $submission_limit) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Submission limit reached. You cannot submit this assignment again.']);
+            return;
+        }
 
-            $new_file_url = $this->uploadFileViaFTP($_FILES['assignment_file']); 
-            if (!$new_file_url) return;
+        // Check if the assignment accepts submissions at all
+        if ($submission_limit <= 0) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'This assignment does not accept submissions.']);
+            return;
+        }
 
-            $updateData = [
-                'file_path' => $new_file_url,
-                'sub_count' => $existingSubmission['sub_count'] + 1,
-                'sub_status' => 'submitted'
-            ];
+        // Upload the new file
+        $file_url = $this->uploadFileViaFTP($_FILES['assignment_file']);
+        if (!$file_url) return; // The helper function sends the error response
 
-            if ($this->assignmentSubmission->patch($existingSubmission['id'], $updateData)) {
-                $updatedSubmission = $this->assignmentSubmission->getById($existingSubmission['id']);
-                echo json_encode(['status' => 'success', 'message' => 'Assignment re-submitted successfully', 'data' => $updatedSubmission]);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to update submission record.']);
-            }
+        // Prepare data for the new record
+        $data['file_path'] = $file_url;
+        $data['sub_count'] = $current_submission_count + 1;
+        $data['sub_status'] = 'submitted';
 
+        // Always create a new record
+        $newId = $this->assignmentSubmission->create($data);
+
+        if ($newId) {
+            $newSubmission = $this->assignmentSubmission->getById($newId);
+            http_response_code(201);
+            echo json_encode(['status' => 'success', 'message' => 'Assignment submission created successfully', 'data' => $newSubmission]);
         } else {
-            if (0 >= $submission_limit) {
-                 http_response_code(403);
-                 echo json_encode(['status' => 'error', 'message' => 'This assignment does not accept submissions.']);
-                 return;
-            }
-            
-            $file_url = $this->uploadFileViaFTP($_FILES['assignment_file']);
-            if (!$file_url) return;
-
-            $data['file_path'] = $file_url;
-            $data['sub_count'] = 1;
-            $data['sub_status'] = 'submitted';
-
-            $newId = $this->assignmentSubmission->create($data);
-
-            if ($newId) {
-                $submission = $this->assignmentSubmission->getById($newId);
-                http_response_code(201);
-                echo json_encode(['status' => 'success', 'message' => 'Assignment submission created successfully', 'data' => $submission]);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Unable to create assignment submission.']);
-            }
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create assignment submission.']);
         }
     }
     
-    public function updateSubmissionFile($id)
-    {
+    // ... other functions are unchanged ...
+    public function updateSubmissionFile($id) 
+    { 
+        // This function will likely need to be re-evaluated based on the new logic.
+        // For now, it remains as it was.
         if (!isset($_FILES['assignment_file'])) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'No new assignment file was uploaded.']);
