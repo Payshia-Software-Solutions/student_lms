@@ -97,7 +97,6 @@ class AssignmentSubmission
         $query = "INSERT INTO " . $this->table_name . " (student_number, course_bucket_id, assigment_id, file_path, sub_count, sub_status, created_by, updated_by) VALUES (:student_number, :course_bucket_id, :assigment_id, :file_path, :sub_count, :sub_status, :created_by, :updated_by)";
         $stmt = $this->pdo->prepare($query);
         
-        // Set default values if not provided
         $created_by = $data['created_by'] ?? null;
         $updated_by = $data['updated_by'] ?? null;
 
@@ -115,6 +114,22 @@ class AssignmentSubmission
         } else {
             $errorInfo = $stmt->errorInfo();
             error_log("SQL Error on create for assigment_submition: " . $errorInfo[2]);
+            return false;
+        }
+    }
+
+    public function update($id, $data)
+    {
+        $query = "UPDATE " . $this->table_name . " SET student_number = :student_number, course_bucket_id = :course_bucket_id, assigment_id = :assigment_id, file_path = :file_path, grade = :grade, sub_count = :sub_count, sub_status = :sub_status, updated_by = :updated_by, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
+        $stmt = $this->pdo->prepare($query);
+
+        $data['id'] = $id;
+
+        if ($stmt->execute($data)) {
+            return true;
+        } else {
+            $errorInfo = $stmt->errorInfo();
+            error_log("SQL Error on update for assigment_submition ID {$id}: " . $errorInfo[2]);
             return false;
         }
     }
