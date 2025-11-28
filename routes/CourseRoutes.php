@@ -30,6 +30,12 @@ return [
         'auth' => 'private'
     ],
 
+    // Get a course with all its buckets and content using a query parameter
+    'GET /courses/details/' => [
+        'handler' => [$courseController, 'getCourseWithDetails'],
+        'auth' => 'private' // Or 'user' depending on your auth scheme
+    ],
+
     // Update course - Private (JWT)
     'PUT /courses/{id}/' => [
         'handler' => function ($id) use ($courseController) {
