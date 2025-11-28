@@ -31,7 +31,7 @@ return [
     ],
 
     // Get a course with all its buckets and content using a query parameter
-    'GET /courses/details/' => [
+    'GET /courses/full/details/' => [
         'handler' => [$courseController, 'getCourseWithDetails'],
         'auth' => 'private' // Or 'user' depending on your auth scheme
     ],
