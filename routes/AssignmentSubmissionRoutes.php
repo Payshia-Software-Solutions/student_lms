@@ -37,6 +37,10 @@ return [
         },
         'auth' => 'user'
     ],
+    'PATCH /assignment-submissions/update-grade/' => [
+        'handler' => [$assignmentSubmissionController, 'updateGrade'],
+        'auth' => 'user' // Recommended: Change to 'teacher' or 'admin' for security
+    ],
     'PUT /assignment-submissions/update/status/' => [
         'handler' => [$assignmentSubmissionController, 'updateSubmissionStatus'],
         'auth' => 'user'
