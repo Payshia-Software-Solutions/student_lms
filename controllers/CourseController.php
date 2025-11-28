@@ -1,16 +1,22 @@
 <?php
 
 require_once __DIR__ . '/../models/Course.php';
+require_once __DIR__ . '/../models/CourseBucket.php';
+require_once __DIR__ . '/../models/CourseBucketContent.php';
 
 class CourseController
 {
-    private $course;
     private $db;
+    private $course;
+    private $courseBucket;
+    private $courseBucketContent;
 
     public function __construct($pdo)
     {
         $this->db = $pdo;
         $this->course = new Course($pdo);
+        $this->courseBucket = new CourseBucket($pdo);
+        $this->courseBucketContent = new CourseBucketContent($pdo);
     }
 
     public function createRecord()
@@ -19,22 +25,12 @@ class CourseController
 
         $newId = $this->course->create($data);
         if ($newId) {
-            if ($this->course->getById($newId)) {
-                $course_item = array(
-                    "id" => $this->course->id,
-                    "course_name" => $this->course->course_name,
-                    "course_code" => $this->course->course_code,
-                    "description" => $this->course->description,
-                    "credits" => $this->course->credits,
-                    "payment_status" => $this->course->payment_status,
-                    "enrollment_key" => $this->course->enrollment_key,
-                    "created_at" => $this->course->created_at,
-                    "updated_at" => $this->course->updated_at
-                );
+            $createdCourse = $this->course->getById($newId);
+            if ($createdCourse) {
                 http_response_code(201);
                 echo json_encode(array(
                     "message" => "Course was created.",
-                    "data" => $course_item
+                    "data" => $createdCourse
                 ));
             } else {
                 http_response_code(503);
@@ -48,29 +44,10 @@ class CourseController
 
     public function getAllRecords()
     {
-        $stmt = $this->course->getAll();
-        $num = $stmt->rowCount();
-
-        if ($num > 0) {
-            $courses_arr = array();
-            $courses_arr["records"] = array();
-
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                extract($row);
-                $course_item = array(
-                    "id" => $id,
-                    "course_name" => $course_name,
-                    "course_code" => $course_code,
-                    "description" => $description,
-                    "credits" => $credits,
-                    "payment_status" => $payment_status,
-                    "enrollment_key" => $enrollment_key
-                );
-                array_push($courses_arr["records"], $course_item);
-            }
-
+        $courses = $this->course->getAll();
+        if (!empty($courses)) {
             http_response_code(200);
-            echo json_encode($courses_arr);
+            echo json_encode(['status' => 'success', 'data' => $courses]);
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "No courses found."));
@@ -79,22 +56,48 @@ class CourseController
 
     public function getRecordById($id)
     {
-        if ($this->course->getById($id)) {
-            $course_item = array(
-                "id" => $this->course->id,
-                "course_name" => $this->course->course_name,
-                "course_code" => $this->course->course_code,
-                "description" => $this->course->description,
-                "credits" => $this->course->credits,
-                "payment_status" => $this->course->payment_status,
-                "enrollment_key" => $this->course->enrollment_key
-            );
+        $course_item = $this->course->getById($id);
+        if ($course_item) {
             http_response_code(200);
-            echo json_encode($course_item);
+            echo json_encode(['status' => 'success', 'data' => $course_item]);
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Course not found."));
         }
+    }
+    
+    public function getCourseWithDetails()
+    {
+        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Course ID parameter is required.']);
+            return;
+        }
+
+        $course = $this->course->getById($id);
+        if (!$course) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Course not found.']);
+            return;
+        }
+
+        $courseBuckets = $this->courseBucket->getByFilters(['course_id' => $id]);
+        
+        $buckets_with_content = [];
+        if (!empty($courseBuckets)) {
+            foreach ($courseBuckets as $bucket) {
+                $bucketContents = $this->courseBucketContent->getByFilters(['course_bucket_id' => $bucket['id']]);
+                $bucket['content'] = !empty($bucketContents) ? $bucketContents : [];
+                $buckets_with_content[] = $bucket;
+            }
+        }
+
+        $course['buckets'] = $buckets_with_content;
+
+        http_response_code(200);
+        echo json_encode(['status' => 'success', 'data' => $course]);
     }
 
     public function updateRecord($id)
@@ -102,22 +105,12 @@ class CourseController
         $data = json_decode(file_get_contents("php://input"), true);
 
         if ($this->course->update($id, $data)) {
-            if ($this->course->getById($id)) {
-                $course_item = array(
-                    "id" => $this->course->id,
-                    "course_name" => $this->course->course_name,
-                    "course_code" => $this->course->course_code,
-                    "description" => $this->course->description,
-                    "credits" => $this->course->credits,
-                    "payment_status" => $this->course->payment_status,
-                    "enrollment_key" => $this->course->enrollment_key,
-                    "created_at" => $this->course->created_at,
-                    "updated_at" => $this->course->updated_at
-                );
+            $updatedCourse = $this->course->getById($id);
+            if ($updatedCourse) {
                 http_response_code(200);
                 echo json_encode(array(
                     "message" => "Course was updated.",
-                    "data" => $course_item
+                    "data" => $updatedCourse
                 ));
             } else {
                 http_response_code(404);
@@ -142,6 +135,7 @@ class CourseController
 
     public function createCourseTable()
     {
+        // Note: This is for setup and should be used with caution
         Course::createTable($this->db);
         echo "Course table created successfully.";
     }
