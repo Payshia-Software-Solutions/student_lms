@@ -102,11 +102,37 @@ class CourseBucket
             $this->created_by = $row['created_by'];
             $this->updated_at = $row['updated_at'];
             $this->updated_by = $row['updated_by'];
-            return true;
+            return $row;
         }
         return false;
     }
     
+    public function getByFilters($filters)
+    {
+        $query = "SELECT * FROM course_bucket WHERE 1=1";
+        $params = [];
+
+        $allowed_filters = ['id', 'course_id', 'name', 'payment_type', 'is_active'];
+
+        if (!empty($filters)) {
+            foreach ($filters as $key => $value) {
+                if (in_array($key, $allowed_filters)) {
+                    $query .= " AND `" . $key . "` = :" . $key;
+                    $params[':' . $key] = $value;
+                }
+            }
+        }
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database Error (getByFilters): " . $e->getMessage());
+            return [];
+        }
+    }
+
     // Get all course buckets for a specific course
     public function getByCourseId($course_id)
     {

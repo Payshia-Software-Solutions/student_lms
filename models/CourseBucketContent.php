@@ -23,7 +23,6 @@ class CourseBucketContent
         $this->conn = $db;
     }
 
-    // Create the course_bucket_content table
     public static function createTable($pdo) {
         $sql = "CREATE TABLE IF NOT EXISTS course_bucket_content (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -44,7 +43,6 @@ class CourseBucketContent
         $pdo->exec($sql);
     }
 
-    // Get all course bucket contents
     public function getAll()
     {
         $query = "SELECT * FROM " . $this->table_name;
@@ -53,7 +51,32 @@ class CourseBucketContent
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Get course bucket contents by course bucket ID
+    public function getByFilters($filters)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE 1=1";
+        $params = [];
+
+        $allowed_filters = ['id', 'course_id', 'course_bucket_id', 'content_type', 'is_active'];
+
+        if (!empty($filters)) {
+            foreach ($filters as $key => $value) {
+                if (in_array($key, $allowed_filters)) {
+                    $query .= " AND `" . $key . "` = :" . $key;
+                    $params[':' . $key] = $value;
+                }
+            }
+        }
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database Error (getByFilters CourseBucketContent): " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getByCourseBucketId($bucket_id)
     {
         $query = "SELECT * FROM " . $this->table_name . " WHERE course_bucket_id = ?";
@@ -63,7 +86,6 @@ class CourseBucketContent
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Get course bucket contents by course ID and course bucket ID
     public function getByCourseAndBucket($course_id, $bucket_id)
     {
         $query = "SELECT * FROM " . $this->table_name . " WHERE course_id = ? AND course_bucket_id = ?";
@@ -74,7 +96,6 @@ class CourseBucketContent
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Get a single course bucket content by ID
     public function getById($id)
     {
         $query = "SELECT * FROM course_bucket_content WHERE id = ?";
@@ -97,19 +118,17 @@ class CourseBucketContent
             $this->created_by = $row['created_by'];
             $this->updated_at = $row['updated_at'];
             $this->updated_by = $row['updated_by'];
-            return true;
+            return $row;
         }
 
         return false;
     }
 
-    // Create a new course bucket content
     public function create($data)
     {
         $query = "INSERT INTO " . $this->table_name . " (course_id, course_bucket_id, content_type, content_title, content, created_by, updated_by) VALUES (:course_id, :course_bucket_id, :content_type, :content_title, :content, :created_by, :updated_by)";
         $stmt = $this->conn->prepare($query);
 
-        // Bind data
         $stmt->bindParam(':course_id', $data['course_id']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
         $stmt->bindParam(':content_type', $data['content_type']);
@@ -125,13 +144,11 @@ class CourseBucketContent
         return false;
     }
 
-    // Update a course bucket content
     public function update($id, $data)
     {
         $query = "UPDATE " . $this->table_name . " SET course_id = :course_id, course_bucket_id = :course_bucket_id, content_type = :content_type, content_title = :content_title, content = :content, is_active = :is_active, updated_by = :updated_by WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
-        // Bind data
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':course_id', $data['course_id']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
@@ -148,7 +165,6 @@ class CourseBucketContent
         return false;
     }
 
-    // Delete a course bucket content
     public function delete($id)
     {
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
