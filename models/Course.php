@@ -91,7 +91,7 @@ class Course
             $this->enrollment_key = $row['enrollment_key'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
-            return true;
+            return $row; // Corrected this line
         }
         return false;
     }
