@@ -69,12 +69,7 @@ class EnrollmentController
             return;
         }
 
-        $this->enrollment->student_id = $data->student_id;
-        $this->enrollment->course_id = $data->course_id;
-        // Optional fields
-        $this->enrollment->status = $data->status ?? 'pending';
-
-        if ($this->enrollment->create()) {
+        if ($this->enrollment->create($data)) {
             $this->successResponse(["message" => "Enrollment created successfully."]);
         } else {
             $this->errorResponse("Failed to create enrollment.");
