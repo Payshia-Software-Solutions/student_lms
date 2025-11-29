@@ -58,5 +58,5 @@ return [
             $courseController->getCourseEnrollments($id);
         },
         'auth' => 'private'
-    ],
+    ]
 ];

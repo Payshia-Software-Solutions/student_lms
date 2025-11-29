@@ -10,6 +10,7 @@ class CourseController
     private $course;
     private $courseBucket;
     private $courseBucketContent;
+    private $ftp_config;
 
     public function __construct($pdo)
     {
@@ -17,28 +18,86 @@ class CourseController
         $this->course = new Course($pdo);
         $this->courseBucket = new CourseBucket($pdo);
         $this->courseBucketContent = new CourseBucketContent($pdo);
+
+        // Load FTP configuration
+        $this->ftp_config = require __DIR__ . '/../config/ftp.php';
+    }
+
+    private function send_via_ftp($file)
+    {
+        $ftp_server = $this->ftp_config['server'];
+        $ftp_user_name = $this->ftp_config['username'];
+        $ftp_user_pass = $this->ftp_config['password'];
+        $remote_path = '/uploads/' . basename($file['name']);
+
+        $conn_id = ftp_connect($ftp_server);
+        if (!$conn_id) {
+            error_log("FTP connection failed: $ftp_server");
+            return false;
+        }
+
+        if (!ftp_login($conn_id, $ftp_user_name, $ftp_user_pass)) {
+            error_log("FTP login failed for user $ftp_user_name");
+            ftp_close($conn_id);
+            return false;
+        }
+
+        if (ftp_put($conn_id, $remote_path, $file['tmp_name'], FTP_BINARY)) {
+            ftp_close($conn_id);
+            return $remote_path;
+        } else {
+            error_log("FTP upload failed for file: " . $file['name']);
+            ftp_close($conn_id);
+            return false;
+        }
     }
 
     public function createRecord()
     {
-        $data = json_decode(file_get_contents("php://input"), true);
+        $data = $_POST;
+        if (isset($_FILES['img_url'])) {
+            $img_path = $this->send_via_ftp($_FILES['img_url']);
+            if ($img_path) {
+                $data['img_url'] = $img_path;
+            } else {
+                http_response_code(500);
+                echo json_encode(["message" => "Failed to upload image."]);
+                return;
+            }
+        }
 
         $newId = $this->course->create($data);
         if ($newId) {
             $createdCourse = $this->course->getById($newId);
-            if ($createdCourse) {
-                http_response_code(201);
-                echo json_encode(array(
-                    "message" => "Course was created.",
-                    "data" => $createdCourse
-                ));
-            } else {
-                http_response_code(503);
-                echo json_encode(array("message" => "Unable to retrieve created course."));
-            }
+            http_response_code(201);
+            echo json_encode(["message" => "Course was created.", "data" => $createdCourse]);
         } else {
             http_response_code(503);
-            echo json_encode(array("message" => "Unable to create course."));
+            echo json_encode(["message" => "Unable to create course."]);
+        }
+    }
+
+    public function updateRecord($id)
+    {
+        $data = $_POST;
+        if (isset($_FILES['img_url'])) {
+            $img_path = $this->send_via_ftp($_FILES['img_url']);
+            if ($img_path) {
+                $data['img_url'] = $img_path;
+            } else {
+                http_response_code(500);
+                echo json_encode(["message" => "Failed to upload image."]);
+                return;
+            }
+        }
+
+        if ($this->course->update($id, $data)) {
+            $updatedCourse = $this->course->getById($id);
+            http_response_code(200);
+            echo json_encode(["message" => "Course was updated.", "data" => $updatedCourse]);
+        } else {
+            http_response_code(503);
+            echo json_encode(["message" => "Unable to update course."]);
         }
     }
 
@@ -100,28 +159,6 @@ class CourseController
         echo json_encode(['status' => 'success', 'data' => $course]);
     }
 
-    public function updateRecord($id)
-    {
-        $data = json_decode(file_get_contents("php://input"), true);
-
-        if ($this->course->update($id, $data)) {
-            $updatedCourse = $this->course->getById($id);
-            if ($updatedCourse) {
-                http_response_code(200);
-                echo json_encode(array(
-                    "message" => "Course was updated.",
-                    "data" => $updatedCourse
-                ));
-            } else {
-                http_response_code(404);
-                echo json_encode(array("message" => "Course not found after update."));
-            }
-        } else {
-            http_response_code(503);
-            echo json_encode(array("message" => "Unable to update course."));
-        }
-    }
-
     public function deleteRecord($id)
     {
         if ($this->course->delete($id)) {
@@ -135,7 +172,6 @@ class CourseController
 
     public function createCourseTable()
     {
-        // Note: This is for setup and should be used with caution
         Course::createTable($this->db);
         echo "Course table created successfully.";
     }
