@@ -1,4 +1,3 @@
-
 <?php
 
 class Course
@@ -42,19 +41,34 @@ class Course
     // Create a new course
     public function create($data)
     {
+        // Ensure $data is an array to prevent errors
+        if (!is_array($data)) {
+            $data = [];
+        }
+
         $query = "INSERT INTO courses (course_name, course_code, description, credits, payment_status, enrollment_key, course_fee, registration_fee, img_url) VALUES (:course_name, :course_code, :description, :credits, :payment_status, :enrollment_key, :course_fee, :registration_fee, :img_url)";
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize and bind parameters
-        $stmt->bindParam(':course_name', htmlspecialchars(strip_tags($data['course_name'])));
-        $stmt->bindParam(':course_code', htmlspecialchars(strip_tags($data['course_code'])));
-        $stmt->bindParam(':description', htmlspecialchars(strip_tags($data['description'])));
-        $stmt->bindParam(':credits', htmlspecialchars(strip_tags($data['credits'])));
-        $stmt->bindParam(':payment_status', htmlspecialchars(strip_tags($data['payment_status'])));
-        $stmt->bindParam(':enrollment_key', htmlspecialchars(strip_tags($data['enrollment_key'])));
-        $stmt->bindParam(':course_fee', htmlspecialchars(strip_tags($data['course_fee'])));
-        $stmt->bindParam(':registration_fee', htmlspecialchars(strip_tags($data['registration_fee'])));
-        $stmt->bindParam(':img_url', htmlspecialchars(strip_tags($data['img_url'])));
+        // Sanitize and bind parameters, checking if keys exist and providing defaults
+        $course_name = htmlspecialchars(strip_tags($data['course_name'] ?? ''));
+        $course_code = htmlspecialchars(strip_tags($data['course_code'] ?? ''));
+        $description = isset($data['description']) ? htmlspecialchars(strip_tags($data['description'])) : null;
+        $credits = (int) ($data['credits'] ?? 0);
+        $payment_status = htmlspecialchars(strip_tags($data['payment_status'] ?? 'monthly'));
+        $enrollment_key = isset($data['enrollment_key']) ? htmlspecialchars(strip_tags($data['enrollment_key'])) : null;
+        $course_fee = $data['course_fee'] ?? 0.00;
+        $registration_fee = $data['registration_fee'] ?? 0.00;
+        $img_url = isset($data['img_url']) ? htmlspecialchars(strip_tags($data['img_url'])) : null;
+
+        $stmt->bindParam(':course_name', $course_name);
+        $stmt->bindParam(':course_code', $course_code);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':credits', $credits, PDO::PARAM_INT);
+        $stmt->bindParam(':payment_status', $payment_status);
+        $stmt->bindParam(':enrollment_key', $enrollment_key);
+        $stmt->bindParam(':course_fee', $course_fee);
+        $stmt->bindParam(':registration_fee', $registration_fee);
+        $stmt->bindParam(':img_url', $img_url);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
