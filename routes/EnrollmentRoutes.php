@@ -2,47 +2,37 @@
 
 require_once __DIR__ . '/../controllers/EnrollmentController.php';
 
-$pdo = $GLOBALS['pdo'];
-$enrollmentController = new EnrollmentController($pdo);
+$enrollmentController = new EnrollmentController($GLOBALS['pdo']);
 
 return [
-    // Create a new enrollment - Private (JWT)
-    'POST /enrollments/' => [
-        'handler' => function () use ($enrollmentController) {
-            $enrollmentController->createRecord();
-        },
-        'auth' => 'private'
-    ],
-
-    // Get all enrollments - Private (JWT)
     'GET /enrollments/' => [
-        'handler' => function () use ($enrollmentController) {
-            $enrollmentController->getAllRecords();
+        'handler' => function() use ($enrollmentController) {
+            $enrollmentController->handleRequest('GET', 'enrollments', null);
         },
         'auth' => 'private'
     ],
-
-    // Get an enrollment by ID - Private (JWT)
-    'GET /enrollments/{id}/' => [
-        'handler' => function ($id) use ($enrollmentController) {
-            $enrollmentController->getRecordById($id);
+    'GET /enrollments/{id}' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->handleRequest('GET', 'enrollments', $id);
         },
         'auth' => 'private'
     ],
-
-    // Update an enrollment - Private (JWT)
-    'PUT /enrollments/{id}/' => [
-        'handler' => function ($id) use ($enrollmentController) {
-            $enrollmentController->updateRecord($id);
+    'POST /enrollments/' => [
+        'handler' => function() use ($enrollmentController) {
+            $enrollmentController->handleRequest('POST', 'enrollments', null);
         },
         'auth' => 'private'
     ],
-
-    // Delete an enrollment (soft delete) - Private (JWT)
-    'DELETE /enrollments/{id}/' => [
-        'handler' => function ($id) use ($enrollmentController) {
-            $enrollmentController->deleteRecord($id);
+    'PUT /enrollments/{id}' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->handleRequest('PUT', 'enrollments', $id);
         },
         'auth' => 'private'
     ],
+    'DELETE /enrollments/{id}' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->handleRequest('DELETE', 'enrollments', $id);
+        },
+        'auth' => 'private'
+    ]
 ];
