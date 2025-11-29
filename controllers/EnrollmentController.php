@@ -43,11 +43,11 @@ class EnrollmentController
         $this->successResponse($enrollments);
     }
 
-    private function getRecordById($id)
+    private function getEnrollmentData($id)
     {
         $this->enrollment->id = $id;
         if ($this->enrollment->read_single()) {
-            $record = [
+            return [
                 'id' => (int)$this->enrollment->id,
                 'student_id' => (int)$this->enrollment->student_id,
                 'course_id' => (int)$this->enrollment->course_id,
@@ -55,6 +55,14 @@ class EnrollmentController
                 'grade' => $this->enrollment->grade,
                 'status' => $this->enrollment->status
             ];
+        }
+        return null;
+    }
+
+    private function getRecordById($id)
+    {
+        $record = $this->getEnrollmentData($id);
+        if ($record) {
             $this->successResponse($record);
         } else {
             $this->errorResponse("Enrollment not found.");
@@ -73,7 +81,11 @@ class EnrollmentController
         $new_id = $this->enrollment->create($data);
 
         if ($new_id) {
-            $this->getRecordById($new_id);
+            $record = $this->getEnrollmentData($new_id);
+            $this->successResponse([
+                'message' => 'Enrollment created successfully.',
+                'data' => $record
+            ], 201);
         } else {
             $this->errorResponse("Failed to create enrollment.");
         }
@@ -106,17 +118,32 @@ class EnrollmentController
         }
 
         if ($this->enrollment->updateStatus($id, $status)) {
-            $this->getRecordById($id);
+            $record = $this->getEnrollmentData($id);
+            $this->successResponse([
+                'message' => 'Enrollment status updated successfully.',
+                'data' => $record
+            ]);
         } else {
             $this->errorResponse("Failed to update enrollment status.");
         }
     }
 
-    private function successResponse($data)
+    private function successResponse($data, $statusCode = 200)
     {
         header('Content-Type: application/json');
-        http_response_code(200);
-        echo json_encode($data);
+        http_response_code($statusCode);
+        echo json_encode(${
+  "message": "Enrollment created successfully.",
+  "data": {
+    "id": 2,
+    "student_id": 1,
+    "course_id": 1,
+    "enrollment_date": "2024-07-31",
+    "grade": null,
+    "status": "pending"
+  }
+}
+);
     }
 
     private function errorResponse($message, $statusCode = 400)
