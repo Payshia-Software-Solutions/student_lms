@@ -43,7 +43,7 @@ class EnrollmentController extends BaseController
     
     private function updateEnrollmentStatus($id)
     {
-        $data = json_decode(.file_get_contents("php://input"), true);
+        $data = json_decode(file_get_contents("php://input"), true);
 
         if (!isset($data['status'])) {
             return $this->errorResponse("Missing 'status' in request body");
