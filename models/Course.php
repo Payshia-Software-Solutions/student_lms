@@ -65,10 +65,10 @@ class Course
     // Get all courses
     public function getAll()
     {
-        $query = "SELECT * FROM courses WHERE deleted_at IS NULL";
+        $query = "SELECT * FROM courses ";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Get a single course by ID
@@ -91,7 +91,7 @@ class Course
             $this->enrollment_key = $row['enrollment_key'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
-            return $row; // Corrected this line
+            return $row;
         }
         return false;
     }
