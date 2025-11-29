@@ -39,8 +39,9 @@ class EnrollmentController
 
     private function getAllRecords()
     {
-        $result = $this->enrollment->read();
-        $this->successResponse($result);
+        $stmt = $this->enrollment->read();
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->successResponse($enrollments);
     }
 
     private function getRecordById($id)
@@ -52,6 +53,7 @@ class EnrollmentController
                 'student_id' => $this->enrollment->student_id,
                 'course_id' => $this->enrollment->course_id,
                 'enrollment_date' => $this->enrollment->enrollment_date,
+                'grade' => $this->enrollment->grade,
                 'status' => $this->enrollment->status
             ];
             $this->successResponse($record);
