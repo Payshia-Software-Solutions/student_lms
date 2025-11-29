@@ -74,6 +74,21 @@ class Enrollment
         return false;
     }
 
+    public function read_by_student_and_course($student_id, $course_id)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND course_id = :course_id AND deleted_at IS NULL';
+        $stmt = $this->conn->prepare($query);
+
+        $student_id = htmlspecialchars(strip_tags($student_id));
+        $course_id = htmlspecialchars(strip_tags($course_id));
+
+        $stmt->bindParam(':student_id', $student_id);
+        $stmt->bindParam(':course_id', $course_id);
+        $stmt->execute();
+
+        return $stmt;
+    }
+
     public function create($data)
     {
         $check_query = 'SELECT id FROM ' . $this->table . ' WHERE student_id = :student_id AND course_id = :course_id AND deleted_at IS NULL';

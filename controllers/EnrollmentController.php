@@ -11,28 +11,12 @@ class EnrollmentController
         $this->enrollment = new Enrollment($this->db);
     }
 
-    public function handleRequest($method, $id)
+    public function getEnrollments()
     {
-        switch ($method) {
-            case 'GET':
-                if ($id) {
-                    $this->getRecordById($id);
-                } else {
-                    $this->getAllRecords();
-                }
-                break;
-            case 'POST':
-                $this->createRecord();
-                break;
-            case 'PUT':
-                $this->updateRecord($id);
-                break;
-            case 'DELETE':
-                $this->deleteRecord($id);
-                break;
-            default:
-                $this->errorResponse("Method not allowed");
-                break;
+        if (isset($_GET['student_id']) && isset($_GET['course_id'])) {
+            $this->getRecordsByStudentAndCourse($_GET['student_id'], $_GET['course_id']);
+        } else {
+            $this->getAllRecords();
         }
     }
 
@@ -59,7 +43,7 @@ class EnrollmentController
         return null;
     }
 
-    private function getRecordById($id)
+    public function getRecordById($id)
     {
         $record = $this->getEnrollmentData($id);
         if ($record) {
@@ -69,7 +53,19 @@ class EnrollmentController
         }
     }
 
-    private function createRecord()
+    private function getRecordsByStudentAndCourse($student_id, $course_id)
+    {
+        $stmt = $this->enrollment->read_by_student_and_course($student_id, $course_id);
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($enrollments) {
+            $this->successResponse($enrollments);
+        } else {
+            $this->errorResponse("No enrollments found for this student and course.");
+        }
+    }
+
+    public function createRecord()
     {
         $data = json_decode(file_get_contents("php://input"));
 
@@ -93,7 +89,7 @@ class EnrollmentController
         }
     }
 
-    private function deleteRecord($id)
+    public function deleteRecord($id)
     {
         $this->enrollment->id = $id;
         if ($this->enrollment->delete()) {
@@ -103,7 +99,7 @@ class EnrollmentController
         }
     }
 
-    private function updateRecord($id)
+    public function updateRecord($id)
     {
         $data = json_decode(file_get_contents("php://input"));
 
