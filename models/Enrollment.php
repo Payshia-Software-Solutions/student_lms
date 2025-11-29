@@ -24,7 +24,7 @@ class Enrollment
     {
         $query = "CREATE TABLE IF NOT EXISTS `enrollments` (
             `id` int(11) NOT NULL AUTO_INCREMENT,
-            `student_id` int(11) NOT NULL,
+            `student_id` varchar(55) NOT NULL,
             `course_id` int(11) NOT NULL,
             `enrollment_date` date DEFAULT NULL,
             `grade` varchar(2) DEFAULT NULL,
@@ -35,7 +35,6 @@ class Enrollment
             PRIMARY KEY (`id`),
             KEY `student_id` (`student_id`),
             KEY `course_id` (`course_id`),
-            CONSTRAINT `enrollments_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
             CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;";
 
@@ -77,6 +76,20 @@ class Enrollment
 
     public function create($data)
     {
+        $check_query = 'SELECT id FROM ' . $this->table . ' WHERE student_id = :student_id AND course_id = :course_id AND deleted_at IS NULL';
+        $check_stmt = $this->conn->prepare($check_query);
+
+        $student_id = htmlspecialchars(strip_tags($data->student_id));
+        $course_id = htmlspecialchars(strip_tags($data->course_id));
+
+        $check_stmt->bindParam(':student_id', $student_id);
+        $check_stmt->bindParam(':course_id', $course_id);
+        $check_stmt->execute();
+
+        if ($check_stmt->rowCount() > 0) {
+            return 'exists';
+        }
+
         $fields = get_object_vars($data);
 
         if (!isset($fields['status'])) {
@@ -97,7 +110,7 @@ class Enrollment
         }
 
         if (empty($columns)) {
-            return false; 
+            return false;
         }
 
         $query = 'INSERT INTO ' . $this->table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
@@ -132,11 +145,11 @@ class Enrollment
         }
 
         if (empty($set_clauses)) {
-            return false; 
+            return false;
         }
 
         $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $set_clauses) . ' WHERE id = :id';
-        
+
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(":id", $id);
