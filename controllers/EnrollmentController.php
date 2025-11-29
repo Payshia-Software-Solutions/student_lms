@@ -49,7 +49,7 @@ class EnrollmentController
         if ($this->enrollment->read_single()) {
             return [
                 'id' => (int)$this->enrollment->id,
-                'student_id' => (int)$this->enrollment->student_id,
+                'student_id' => (string)$this->enrollment->student_id,
                 'course_id' => (int)$this->enrollment->course_id,
                 'enrollment_date' => $this->enrollment->enrollment_date,
                 'grade' => $this->enrollment->grade,
@@ -78,10 +78,12 @@ class EnrollmentController
             return;
         }
 
-        $new_id = $this->enrollment->create($data);
+        $result = $this->enrollment->create($data);
 
-        if ($new_id) {
-            $record = $this->getEnrollmentData($new_id);
+        if ($result === 'exists') {
+            $this->errorResponse("This student is already enrolled in this course.", 409);
+        } else if (is_numeric($result)) {
+            $record = $this->getEnrollmentData($result);
             $this->successResponse([
                 'message' => 'Enrollment created successfully.',
                 'data' => $record
