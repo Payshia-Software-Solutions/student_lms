@@ -25,7 +25,7 @@ class EnrollmentController
                 $this->createRecord();
                 break;
             case 'PUT':
-                $this->updateEnrollmentStatus($id);
+                $this->updateRecord($id);
                 break;
             case 'DELETE':
                 $this->deleteRecord($id);
@@ -101,30 +101,23 @@ class EnrollmentController
         }
     }
 
-    private function updateEnrollmentStatus($id)
+    private function updateRecord($id)
     {
-        $data = json_decode(file_get_contents("php://input"), true);
+        $data = json_decode(file_get_contents("php://input"));
 
-        if (!isset($data['status'])) {
-            $this->errorResponse("Missing 'status' in request body");
+        if (empty(get_object_vars($data))) {
+            $this->errorResponse("No data provided for update.");
             return;
         }
 
-        $status = $data['status'];
-        $allowed_statuses = ['pending', 'rejected', 'approved'];
-        if (!in_array($status, $allowed_statuses)) {
-            $this->errorResponse("Invalid status value. Must be one of: pending, rejected, approved.");
-            return;
-        }
-
-        if ($this->enrollment->updateStatus($id, $status)) {
+        if ($this->enrollment->update($id, $data)) {
             $record = $this->getEnrollmentData($id);
             $this->successResponse([
-                'message' => 'Enrollment status updated successfully.',
+                'message' => 'Enrollment updated successfully.',
                 'data' => $record
             ]);
         } else {
-            $this->errorResponse("Failed to update enrollment status.");
+            $this->errorResponse("Failed to update enrollment.");
         }
     }
 

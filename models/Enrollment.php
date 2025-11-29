@@ -1,4 +1,3 @@
-
 <?php
 
 class Enrollment
@@ -78,40 +77,79 @@ class Enrollment
 
     public function create($data)
     {
-        $query = 'INSERT INTO ' . $this->table . ' (student_id, course_id, status) VALUES (:student_id, :course_id, :status)';
+        $fields = get_object_vars($data);
+
+        if (!isset($fields['status'])) {
+            $fields['status'] = 'pending';
+        }
+
+        $allowed_columns = ['student_id', 'course_id', 'enrollment_date', 'grade', 'status'];
+        $columns = [];
+        $placeholders = [];
+        $values_to_bind = [];
+
+        foreach ($fields as $key => $value) {
+            if (in_array($key, $allowed_columns)) {
+                $columns[] = "`$key`";
+                $placeholders[] = ":$key";
+                $values_to_bind[$key] = htmlspecialchars(strip_tags($value));
+            }
+        }
+
+        if (empty($columns)) {
+            return false; 
+        }
+
+        $query = 'INSERT INTO ' . $this->table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
 
         $stmt = $this->conn->prepare($query);
 
-        $this->student_id = htmlspecialchars(strip_tags($data->student_id));
-        $this->course_id = htmlspecialchars(strip_tags($data->course_id));
-        $this->status = $data->status ?? 'pending';
-
-        $stmt->bindParam(':student_id', $this->student_id);
-        $stmt->bindParam(':course_id', $this->course_id);
-        $stmt->bindParam(':status', $this->status);
+        foreach ($values_to_bind as $key => &$value) {
+            $stmt->bindParam(":$key", $value);
+        }
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
         }
-        printf("Error: %s.
-", $stmt->error);
+
+        error_log("DB Create Error: " . implode(", ", $stmt->errorInfo()));
         return false;
     }
 
-    public function updateStatus($id, $status)
+    public function update($id, $data)
     {
-        $query = 'UPDATE ' . $this->table . ' SET status = :status WHERE id = :id';
+        $fields = get_object_vars($data);
+
+        $allowed_columns = ['student_id', 'course_id', 'enrollment_date', 'grade', 'status'];
+        $set_clauses = [];
+        $values_to_bind = [];
+
+        foreach ($fields as $key => $value) {
+            if (in_array($key, $allowed_columns)) {
+                $set_clauses[] = "`$key` = :$key";
+                $values_to_bind[$key] = htmlspecialchars(strip_tags($value));
+            }
+        }
+
+        if (empty($set_clauses)) {
+            return false; 
+        }
+
+        $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $set_clauses) . ' WHERE id = :id';
+        
         $stmt = $this->conn->prepare($query);
 
-        $this->id = htmlspecialchars(strip_tags($id));
-        $this->status = htmlspecialchars(strip_tags($status));
+        $stmt->bindParam(":id", $id);
 
-        $stmt->bindParam(':status', $this->status);
-        $stmt->bindParam(':id', $this->id);
+        foreach ($values_to_bind as $key => &$value) {
+            $stmt->bindParam(":$key", $value);
+        }
 
         if ($stmt->execute()) {
-            return true;
+            return $stmt->rowCount() > 0;
         }
+
+        error_log("DB Update Error: " . implode(", ", $stmt->errorInfo()));
         return false;
     }
 
