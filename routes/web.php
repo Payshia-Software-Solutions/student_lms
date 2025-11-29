@@ -76,7 +76,7 @@ $PaymentRequestRoutes = require_once __DIR__ . '/PaymentRequestRoutes.php';
 $AssignmentRoutes = require_once __DIR__ . '/AssignmentRoutes.php';
 $AssignmentSubmissionRoutes = require_once __DIR__ . '/AssignmentSubmissionRoutes.php';
 
-
+Enrollment::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
