@@ -132,18 +132,7 @@ class EnrollmentController
     {
         header('Content-Type: application/json');
         http_response_code($statusCode);
-        echo json_encode(${
-  "message": "Enrollment created successfully.",
-  "data": {
-    "id": 2,
-    "student_id": 1,
-    "course_id": 1,
-    "enrollment_date": "2024-07-31",
-    "grade": null,
-    "status": "pending"
-  }
-}
-);
+        echo json_encode($data);
     }
 
     private function errorResponse($message, $statusCode = 400)
