@@ -28,7 +28,6 @@ class CourseController
         $ftp_server = $this->ftp_config['server'];
         $ftp_user_name = $this->ftp_config['username'];
         $ftp_user_pass = $this->ftp_config['password'];
-        $remote_path = '/uploads/' . basename($file['name']);
 
         $conn_id = ftp_connect($ftp_server);
         if (!$conn_id) {
@@ -41,10 +40,22 @@ class CourseController
             ftp_close($conn_id);
             return false;
         }
+        
+        // Enable passive mode
+        ftp_pasv($conn_id, true);
+        
+        $upload_dir = 'uploads';
+        
+        // Try to create the directory, suppress errors if it already exists
+        @ftp_mkdir($conn_id, $upload_dir);
 
+        $remote_path = $upload_dir . '/' . basename($file['name']);
+
+        // Upload the file
         if (ftp_put($conn_id, $remote_path, $file['tmp_name'], FTP_BINARY)) {
             ftp_close($conn_id);
-            return $remote_path;
+            // Return a web-accessible path
+            return '/' . $remote_path;
         } else {
             error_log("FTP upload failed for file: " . $file['name']);
             ftp_close($conn_id);
