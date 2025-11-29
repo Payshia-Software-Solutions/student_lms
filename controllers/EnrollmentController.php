@@ -1,4 +1,3 @@
-
 <?php
 
 class EnrollmentController
@@ -49,9 +48,9 @@ class EnrollmentController
         $this->enrollment->id = $id;
         if ($this->enrollment->read_single()) {
             $record = [
-                'id' => $this->enrollment->id,
-                'student_id' => $this->enrollment->student_id,
-                'course_id' => $this->enrollment->course_id,
+                'id' => (int)$this->enrollment->id,
+                'student_id' => (int)$this->enrollment->student_id,
+                'course_id' => (int)$this->enrollment->course_id,
                 'enrollment_date' => $this->enrollment->enrollment_date,
                 'grade' => $this->enrollment->grade,
                 'status' => $this->enrollment->status
@@ -71,8 +70,10 @@ class EnrollmentController
             return;
         }
 
-        if ($this->enrollment->create($data)) {
-            $this->successResponse(["message" => "Enrollment created successfully."]);
+        $new_id = $this->enrollment->create($data);
+
+        if ($new_id) {
+            $this->getRecordById($new_id);
         } else {
             $this->errorResponse("Failed to create enrollment.");
         }
@@ -105,7 +106,7 @@ class EnrollmentController
         }
 
         if ($this->enrollment->updateStatus($id, $status)) {
-            $this->successResponse(["message" => "Enrollment status updated successfully."]);
+            $this->getRecordById($id);
         } else {
             $this->errorResponse("Failed to update enrollment status.");
         }

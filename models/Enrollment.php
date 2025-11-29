@@ -91,7 +91,7 @@ class Enrollment
         $stmt->bindParam(':status', $this->status);
 
         if ($stmt->execute()) {
-            return true;
+            return $this->conn->lastInsertId();
         }
         printf("Error: %s.
 ", $stmt->error);
