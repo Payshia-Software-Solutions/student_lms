@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../models/Enrollment.php';
+
 class EnrollmentController
 {
     private $db;
@@ -17,6 +19,17 @@ class EnrollmentController
             $this->getRecordsByStudentAndCourse($_GET['student_id'], $_GET['course_id']);
         } else {
             $this->getAllRecords();
+        }
+    }
+
+    public function getEnrollmentsByStatus($status)
+    {
+        $stmt = $this->enrollment->getByStatus($status);
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($enrollments) {
+            $this->successResponse($enrollments);
+        } else {
+            $this->errorResponse("No enrollments found with that status.");
         }
     }
 
