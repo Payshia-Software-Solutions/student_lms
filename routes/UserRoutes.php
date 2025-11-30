@@ -6,65 +6,53 @@ $pdo = $GLOBALS['pdo'];
 $userController = new UserController($pdo);
 
 return [
-    // User Login - No Auth
-    'POST /login/' => [
-        'handler' => function () use ($userController) {
-            $userController->login();
-        },
-        'auth' => 'none'
+    // User Login
+    'POST /users/login' => [
+        'handler' => [$userController, 'login'],
+        'auth' => 'public'
     ],
-
-    // Get all users - Private (JWT)
+    // Get all users, with an option to filter by status
     'GET /users/' => [
         'handler' => function () use ($userController) {
-            $userController->getAllRecords();
-        },
-        'auth' => 'private'
-    ],
-
-    // Get a user by ID - Private (JWT)
-    'GET /users/{id}/' => [
-        'handler' => function ($id) use ($userController) {
-            $userController->getRecordById($id);
-        },
-        'auth' => 'private'
-    ],
-
-    // Get a user by Student Number - Private (JWT)
-    'GET /users/full/student_number/' => [
-        'handler' => function () use ($userController) {
-            if (isset($_GET['student_number'])) {
-                $userController->getRecordByStudentNumber($_GET['student_number']);
+            if (isset($_GET['status'])) {
+                $userController->getUsersByStatus($_GET['status']);
             } else {
-                http_response_code(400);
-                echo json_encode(['status' => 'error', 'message' => 'student_number parameter is required']);
+                $userController->getAllRecords();
             }
         },
         'auth' => 'private'
     ],
-
-    // Create a new user (Signup) - No Auth
+    // Get a single user by ID
+    'GET /users/{id}' => [
+        'handler' => function ($params) use ($userController) {
+            $userController->getRecordById($params['id']);
+        },
+        'auth' => 'private'
+    ],
+    // Get a single user by Student Number
+    'GET /users/student/{studentNumber}' => [
+        'handler' => function ($params) use ($userController) {
+            $userController->getRecordByStudentNumber($params['studentNumber']);
+        },
+        'auth' => 'private'
+    ],
+    // Create a new user
     'POST /users/' => [
-        'handler' => function () use ($userController) {
-            $userController->createRecord();
-        },
-        'auth' => 'none'
+        'handler' => [$userController, 'createRecord'],
+        'auth' => 'public' // Or 'private' if only admins can create users
     ],
-
-    // Update user - Private (JWT)
-    'PUT /users/{id}/' => [
-        'handler' => function ($id) use ($userController) {
-            $userController->updateRecord($id);
+    // Update an existing user
+    'PUT /users/{id}' => [
+        'handler' => function ($params) use ($userController) {
+            $userController->updateRecord($params['id']);
         },
         'auth' => 'private'
     ],
-
-    // Delete user (soft delete) - Private (JWT)
-    'DELETE /users/{id}/' => [
-        'handler' => function ($id) use ($userController) {
-            $userController->deleteRecord($id);
+    // Delete a user (soft delete)
+    'DELETE /users/{id}' => [
+        'handler' => function ($params) use ($userController) {
+            $userController->deleteRecord($params['id']);
         },
         'auth' => 'private'
     ],
-
 ];

@@ -22,6 +22,17 @@ class UserController
         $this->studentCourse = new StudentCourse($pdo);
         $this->course = new Course($pdo);
     }
+    
+    public function getUsersByStatus($status)
+    {
+        $users = $this->user->getByStatus($status);
+        if ($users) {
+            echo json_encode(['status' => 'success', 'data' => $users]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'No users found with that status']);
+        }
+    }
 
     public function getAllRecords()
     {
