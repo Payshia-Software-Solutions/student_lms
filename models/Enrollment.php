@@ -22,21 +22,7 @@ class Enrollment
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `enrollments` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `student_id` varchar(55) NOT NULL,
-            `course_id` int(11) NOT NULL,
-            `enrollment_date` date DEFAULT NULL,
-            `grade` varchar(2) DEFAULT NULL,
-            `created_at` timestamp NULL DEFAULT current_timestamp(),
-            `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-            `deleted_at` timestamp NULL DEFAULT NULL,
-            `status` enum('pending','rejected','approved') DEFAULT 'pending',
-            PRIMARY KEY (`id`),
-            KEY `student_id` (`student_id`),
-            KEY `course_id` (`course_id`),
-            CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;";
+        $query = "CREATE TABLE IF NOT EXISTS `enrollments` (\n            `id` int(11) NOT NULL AUTO_INCREMENT,\n            `student_id` varchar(55) NOT NULL,\n            `course_id` int(11) NOT NULL,\n            `enrollment_date` date DEFAULT NULL,\n            `grade` varchar(2) DEFAULT NULL,\n            `created_at` timestamp NULL DEFAULT current_timestamp(),\n            `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n            `deleted_at` timestamp NULL DEFAULT NULL,\n            `status` enum('pending','rejected','approved') DEFAULT 'pending',\n            PRIMARY KEY (`id`),\n            KEY `student_id` (`student_id`),\n            KEY `course_id` (`course_id`),\n            CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE\n        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;";
 
         try {
             $stmt = $db->prepare($query);
@@ -50,6 +36,18 @@ class Enrollment
     {
         $query = 'SELECT * FROM ' . $this->table . ' WHERE deleted_at IS NULL';
         $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
+    
+    public function getByStatus($status)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE status = :status AND deleted_at IS NULL';
+        $stmt = $this->conn->prepare($query);
+
+        $status = htmlspecialchars(strip_tags($status));
+        $stmt->bindParam(':status', $status);
+
         $stmt->execute();
         return $stmt;
     }

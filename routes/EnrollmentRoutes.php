@@ -6,12 +6,18 @@ $enrollmentController = new EnrollmentController($GLOBALS['pdo']);
 
 return [
     'GET /enrollments/' => [
-        'handler' => [$enrollmentController, 'getEnrollments'],
+        'handler' => function() use ($enrollmentController) {
+            if (isset($_GET['enroll_status'])) {
+                $enrollmentController->getEnrollmentsByStatus($_GET['enroll_status']);
+            } else {
+                $enrollmentController->getEnrollments();
+            }
+        },
         'auth' => 'private'
     ],
     'GET /enrollments/{id}' => [
-        'handler' => function($id) use ($enrollmentController) {
-            $enrollmentController->getRecordById($id);
+        'handler' => function($params) use ($enrollmentController) {
+            $enrollmentController->getRecordById($params['id']);
         },
         'auth' => 'private'
     ],
@@ -20,14 +26,14 @@ return [
         'auth' => 'private'
     ],
     'PUT /enrollments/{id}' => [
-        'handler' => function($id) use ($enrollmentController) {
-            $enrollmentController->updateRecord($id);
+        'handler' => function($params) use ($enrollmentController) {
+            $enrollmentController->updateRecord($params['id']);
         },
         'auth' => 'private'
     ],
     'DELETE /enrollments/{id}' => [
-        'handler' => function($id) use ($enrollmentController) {
-            $enrollmentController->deleteRecord($id);
+        'handler' => function($params) use ($enrollmentController) {
+            $enrollmentController->deleteRecord($params['id']);
         },
         'auth' => 'private'
     ]
