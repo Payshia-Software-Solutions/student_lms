@@ -17,12 +17,6 @@ return [
         },
         'auth' => 'private'
     ],
-    'GET /enrollments/student/{student_id}' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->getEnrollmentsByStudent($params['student_id']);
-        },
-        'auth' => 'private'
-    ],
     'GET /enrollments/student/{student_id}/approved' => [
         'handler' => function($params) use ($enrollmentController) {
             $enrollmentController->getApprovedEnrollmentsForStudent($params['student_id']);
