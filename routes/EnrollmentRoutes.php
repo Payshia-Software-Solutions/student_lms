@@ -9,9 +9,17 @@ return [
         'handler' => function() use ($enrollmentController) {
             if (isset($_GET['enroll_status'])) {
                 $enrollmentController->getEnrollmentsByStatus($_GET['enroll_status']);
+            } else if (isset($_GET['course_id'])) {
+                $enrollmentController->getEnrollmentsByCourse($_GET['course_id']);
             } else {
                 $enrollmentController->getEnrollments();
             }
+        },
+        'auth' => 'private'
+    ],
+    'GET /enrollments/student/{student_id}/approved' => [
+        'handler' => function($params) use ($enrollmentController) {
+            $enrollmentController->getApprovedEnrollmentsForStudent($params['student_id']);
         },
         'auth' => 'private'
     ],

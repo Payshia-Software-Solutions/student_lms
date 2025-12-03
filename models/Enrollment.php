@@ -40,6 +40,18 @@ class Enrollment
         return $stmt;
     }
     
+    public function getByCourseIdWithCourseName($course_id)
+    {
+        $query = 'SELECT e.*, c.name as course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.course_id = :course_id AND e.deleted_at IS NULL';
+        $stmt = $this->conn->prepare($query);
+
+        $course_id = htmlspecialchars(strip_tags($course_id));
+        $stmt->bindParam(':course_id', $course_id);
+
+        $stmt->execute();
+        return $stmt;
+    }
+
     public function getByStatus($status)
     {
         $query = 'SELECT * FROM ' . $this->table . ' WHERE status = :status AND deleted_at IS NULL';
@@ -47,6 +59,31 @@ class Enrollment
 
         $status = htmlspecialchars(strip_tags($status));
         $stmt->bindParam(':status', $status);
+
+        $stmt->execute();
+        return $stmt;
+    }
+
+    public function getStudentsByEnrollmentStatus($status)
+    {
+        $query = 'SELECT \n                    u.id as student_user_id, \n                    u.f_name, \n                    u.l_name, \n                    u.email, \n                    u.student_number, \n                    e.id as enrollment_id, \n                    e.status as enrollment_status, \n                    e.enrollment_date, \n                    c.id as course_id, \n                    c.name as course_name \n                  FROM \n                    ' . $this->table . ' e \n                  JOIN \n                    users u ON e.student_id = u.student_number \n                  JOIN \n                    courses c ON e.course_id = c.id \n                  WHERE \n                    e.status = :status AND e.deleted_at IS NULL';
+
+        $stmt = $this->conn->prepare($query);
+
+        $status = htmlspecialchars(strip_tags($status));
+        $stmt->bindParam(':status', $status);
+
+        $stmt->execute();
+        return $stmt;
+    }
+
+    public function getApprovedByStudent($student_id)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = \'approved\' AND deleted_at IS NULL';
+        $stmt = $this->conn->prepare($query);
+
+        $student_id = htmlspecialchars(strip_tags($student_id));
+        $stmt->bindParam(':student_id', $student_id);
 
         $stmt->execute();
         return $stmt;

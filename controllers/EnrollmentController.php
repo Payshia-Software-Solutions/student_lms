@@ -21,15 +21,45 @@ class EnrollmentController
             $this->getAllRecords();
         }
     }
+    
+    public function getEnrollmentsByCourse($course_id)
+    {
+        $stmt = $this->enrollment->getByCourseIdWithCourseName($course_id);
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($enrollments) {
+            $this->successResponse($enrollments);
+        } else {
+            $this->errorResponse("No enrollments found for this course.");
+        }
+    }
 
     public function getEnrollmentsByStatus($status)
     {
-        $stmt = $this->enrollment->getByStatus($status);
+        $include = isset($_GET['include']) ? $_GET['include'] : '';
+
+        if ($include === 'student') {
+            $stmt = $this->enrollment->getStudentsByEnrollmentStatus($status);
+        } else {
+            $stmt = $this->enrollment->getByStatus($status);
+        }
+
         $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if ($enrollments) {
             $this->successResponse($enrollments);
         } else {
             $this->errorResponse("No enrollments found with that status.");
+        }
+    }
+
+    public function getApprovedEnrollmentsForStudent($student_id)
+    {
+        $stmt = $this->enrollment->getApprovedByStudent($student_id);
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($enrollments) {
+            $this->successResponse($enrollments);
+        } else {
+            $this->errorResponse("No approved enrollments found for this student.");
         }
     }
 
