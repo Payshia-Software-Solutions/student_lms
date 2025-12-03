@@ -54,7 +54,7 @@ class Enrollment
 
     public function getByStatus($status)
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE status = :status AND deleted_at IS NULL';
+        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.status = :status AND e.deleted_at IS NULL';
         $stmt = $this->conn->prepare($query);
 
         $status = htmlspecialchars(strip_tags($status));
