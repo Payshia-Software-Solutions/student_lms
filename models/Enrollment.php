@@ -89,6 +89,18 @@ class Enrollment
         return $stmt;
     }
 
+    public function getByStudentId($student_id)
+    {
+        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.student_id = :student_id AND e.deleted_at IS NULL';
+        $stmt = $this->conn->prepare($query);
+
+        $student_id = htmlspecialchars(strip_tags($student_id));
+        $stmt->bindParam(':student_id', $student_id);
+
+        $stmt->execute();
+        return $stmt;
+    }
+
     public function read_single()
     {
         $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id AND deleted_at IS NULL';

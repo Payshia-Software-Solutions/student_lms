@@ -96,6 +96,17 @@ class EnrollmentController
         }
     }
 
+    public function getEnrollmentsByStudent($student_id)
+    {
+        $stmt = $this->enrollment->getByStudentId($student_id);
+        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($enrollments) {
+            $this->successResponse($enrollments);
+        } else {
+            $this->errorResponse("No enrollments found for this student.");
+        }
+    }
+
     private function getRecordsByStudentAndCourse($student_id, $course_id)
     {
         $stmt = $this->enrollment->read_by_student_and_course($student_id, $course_id);
