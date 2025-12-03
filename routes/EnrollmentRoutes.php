@@ -36,7 +36,9 @@ return [
         'auth' => 'private'
     ],
     'POST /enrollments/' => [
-        'handler' => [$enrollmentController, 'createRecord'],
+        'handler' => function() use ($enrollmentController) {
+            $enrollmentController->createRecord();
+        },
         'auth' => 'private'
     ],
     'PUT /enrollments/{id}' => [
