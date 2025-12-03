@@ -51,7 +51,7 @@ class CourseBucketController
         if ($this->courseBucket->getById($id)) {
             $courseBucket_item = [
                 'id' => $this->courseBucket->id,
-                'bucket_name' => $this->courseBucket->bucket_name,
+                'bucket_name' => $this->courseBucket->name,
                 'course_id' => $this->courseBucket->course_id,
                 'is_active' => $this->courseBucket->is_active,
                 'created_at' => $this->courseBucket->created_at,
@@ -75,7 +75,7 @@ class CourseBucketController
             if ($this->courseBucket->getById($newId)) {
                 $courseBucket_item = [
                     'id' => $this->courseBucket->id,
-                    'bucket_name' => $this->courseBucket->bucket_name,
+                    'bucket_name' => $this->courseBucket->name,
                     'course_id' => $this->courseBucket->course_id,
                     'is_active' => $this->courseBucket->is_active,
                     'created_at' => $this->courseBucket->created_at,
@@ -102,7 +102,7 @@ class CourseBucketController
             if ($this->courseBucket->getById($id)) {
                 $courseBucket_item = [
                     'id' => $this->courseBucket->id,
-                    'bucket_name' => $this->courseBucket->bucket_name,
+                    'bucket_name' => $this->courseBucket->name,
                     'course_id' => $this->courseBucket->course_id,
                     'is_active' => $this->courseBucket->is_active,
                     'created_at' => $this->courseBucket->created_at,
