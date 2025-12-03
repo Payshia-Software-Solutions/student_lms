@@ -21,16 +21,39 @@ class Enrollment
     }
 
     public static function createTable($db)
-    {
-        $query = "CREATE TABLE IF NOT EXISTS `enrollments` (\n            `id` int(11) NOT NULL AUTO_INCREMENT,\n            `student_id` varchar(55) NOT NULL,\n            `course_id` int(11) NOT NULL,\n            `enrollment_date` date DEFAULT NULL,\n            `grade` varchar(2) DEFAULT NULL,\n            `created_at` timestamp NULL DEFAULT current_timestamp(),\n            `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n            `deleted_at` timestamp NULL DEFAULT NULL,\n            `status` enum('pending','rejected','approved') DEFAULT 'pending',\n            PRIMARY KEY (`id`),\n            KEY `student_id` (`student_id`),\n            KEY `course_id` (`course_id`),\n            CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE\n        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;";
+{
+    $query = "CREATE TABLE IF NOT EXISTS `enrollments` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `student_id` varchar(55) NOT NULL COMMENT 'References users.student_number',
+        `course_id` int(11) NOT NULL COMMENT 'References courses.id',
+        `enrollment_date` date DEFAULT NULL,
+        `grade` varchar(2) DEFAULT NULL,
+        `status` enum('pending','rejected','approved') DEFAULT 'pending',
+        `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP(),
+        `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
+        `deleted_at` timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        -- Index for student_id is already defined as a KEY, making it a foreign key below
+        KEY `student_id` (`student_id`), 
+        KEY `course_id` (`course_id`),
+        
+        -- FIX/IMPROVEMENT: Added Foreign Key for student_id
+        CONSTRAINT `fk_enrollments_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`student_number`) ON DELETE CASCADE,
+        
+        -- Existing Foreign Key for course_id (renamed for clarity)
+        CONSTRAINT `fk_enrollments_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
-        try {
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Table Creation Error: " . $e->getMessage());
-        }
+    try {
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        // Optional: return true or log success if needed
+    } catch (PDOException $e) {
+        // Log the error message to the server's error log
+        error_log("Table Creation Error: " . $e->getMessage());
+        // Optional: Re-throw the exception or return false
     }
+}
 
     public function read()
     {
