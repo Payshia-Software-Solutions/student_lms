@@ -42,7 +42,7 @@ class Enrollment
     
     public function getByCourseIdWithCourseName($course_id)
     {
-        $query = 'SELECT e.*, c.name as course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.course_id = :course_id AND e.deleted_at IS NULL';
+        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.course_id = :course_id AND e.deleted_at IS NULL';
         $stmt = $this->conn->prepare($query);
 
         $course_id = htmlspecialchars(strip_tags($course_id));
@@ -66,7 +66,7 @@ class Enrollment
 
     public function getStudentsByEnrollmentStatus($status)
     {
-        $query = 'SELECT \n                    u.id as student_user_id, \n                    u.f_name, \n                    u.l_name, \n                    u.email, \n                    u.student_number, \n                    e.id as enrollment_id, \n                    e.status as enrollment_status, \n                    e.enrollment_date, \n                    c.id as course_id, \n                    c.name as course_name \n                  FROM \n                    ' . $this->table . ' e \n                  JOIN \n                    users u ON e.student_id = u.student_number \n                  JOIN \n                    courses c ON e.course_id = c.id \n                  WHERE \n                    e.status = :status AND e.deleted_at IS NULL';
+        $query = 'SELECT \n                    u.id as student_user_id, \n                    u.f_name, \n                    u.l_name, \n                    u.email, \n                    u.student_number, \n                    e.id as enrollment_id, \n                    e.status as enrollment_status, \n                    e.enrollment_date, \n                    c.id as course_id, \n                    c.course_name \n                  FROM \n                    ' . $this->table . ' e \n                  JOIN \n                    users u ON e.student_id = u.student_number \n                  JOIN \n                    courses c ON e.course_id = c.id \n                  WHERE \n                    e.status = :status AND e.deleted_at IS NULL';
 
         $stmt = $this->conn->prepare($query);
 
