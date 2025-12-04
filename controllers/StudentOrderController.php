@@ -51,13 +51,13 @@ class StudentOrderController
         $result = [];
         foreach ($records as $record) {
             $orderableItemDetails = $orderableItem->read_single($record['orderable_item_id']);
-            $record['orderable_item_name'] = $orderableItemDetails['name'];
+            $record['orderable_item_name'] = $orderableItemDetails ? $orderableItemDetails['name'] : null;
 
             $courseDetails = $course->getById($record['course_id']);
-            $record['course_name'] = $courseDetails['course_name'];
+            $record['course_name'] = $courseDetails ? $courseDetails['course_name'] : null;
 
             $courseBucketDetails = $courseBucket->getById($record['course_bucket_id']);
-            $record['course_bucket_name'] = $courseBucketDetails['name'];
+            $record['course_bucket_name'] = $courseBucketDetails ? $courseBucketDetails['name'] : null;
 
             $result[] = $record;
         }
