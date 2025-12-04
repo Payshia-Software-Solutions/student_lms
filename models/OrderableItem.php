@@ -13,7 +13,6 @@ class OrderableItem
     public $img_url;
     public $created_at;
     public $updated_at;
-    public $deleted_at;
 
     public function __construct($db)
     {
@@ -22,7 +21,7 @@ class OrderableItem
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `orderable_item` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `name` VARCHAR(255) NOT NULL,\n            `price` DECIMAL(10,2) NOT NULL,\n            `course_id` INT NOT NULL,\n            `course_bucket_id` INT NOT NULL,\n            `img_url` VARCHAR(255) NOT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            `deleted_at` TIMESTAMP NULL
+        $query = "CREATE TABLE IF NOT EXISTS `orderable_item` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `name` VARCHAR(255) NOT NULL,\n            `price` DECIMAL(10,2) NOT NULL,\n            `course_id` INT NOT NULL,\n            `course_bucket_id` INT NOT NULL,\n            `img_url` VARCHAR(255) NOT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         );";
 
         try {
@@ -36,7 +35,7 @@ class OrderableItem
 
     public function read()
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE deleted_at IS NULL';
+        $query = 'SELECT * FROM ' . $this->table;
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -44,7 +43,7 @@ class OrderableItem
 
     public function read_single($id)
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id AND deleted_at IS NULL';
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -88,7 +87,7 @@ class OrderableItem
 
     public function delete($id)
     {
-        $query = 'UPDATE ' . $this->table . ' SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id';
+        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
 

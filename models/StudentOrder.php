@@ -17,8 +17,6 @@ class StudentOrder
     public $phone_number_1;
     public $phone_number_2;
     public $created_at;
-    public $updated_at;
-    public $deleted_at;
 
     public function __construct($db)
     {
@@ -27,7 +25,7 @@ class StudentOrder
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `student_order` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_id` INT NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` ENUM('pending', 'packed', 'handed_over', 'delivered') NOT NULL DEFAULT 'pending',\n            `address_line_1` VARCHAR(255) NOT NULL,\n            `address_line_2` VARCHAR(255) DEFAULT NULL,\n            `city` VARCHAR(100) NOT NULL,\n            `district` VARCHAR(100) NOT NULL,\n            `postal_code` VARCHAR(20) NOT NULL,\n            `phone_number_1` VARCHAR(20) NOT NULL,\n            `phone_number_2` VARCHAR(20) DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            `deleted_at` TIMESTAMP NULL,\n            FOREIGN KEY (student_id) REFERENCES students(id),\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
+        $query = "CREATE TABLE IF NOT EXISTS `student_order` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_id` INT NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` ENUM('pending', 'packed', 'handed_over', 'delivered') NOT NULL DEFAULT 'pending',\n            `address_line_1` VARCHAR(255) NOT NULL,\n            `address_line_2` VARCHAR(255) DEFAULT NULL,\n            `city` VARCHAR(100) NOT NULL,\n            `district` VARCHAR(100) NOT NULL,\n            `postal_code` VARCHAR(20) NOT NULL,\n            `phone_number_1` VARCHAR(20) NOT NULL,\n            `phone_number_2` VARCHAR(20) DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            FOREIGN KEY (student_id) REFERENCES students(id),\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
 
         try {
             $stmt = $db->prepare($query);
@@ -39,7 +37,7 @@ class StudentOrder
 
     public function read()
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE deleted_at IS NULL';
+        $query = 'SELECT * FROM ' . $this->table;
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -47,7 +45,7 @@ class StudentOrder
 
     public function read_single($id)
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id AND deleted_at IS NULL';
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -56,7 +54,7 @@ class StudentOrder
 
     public function readByStudent($student_id)
     {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND deleted_at IS NULL';
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':student_id', $student_id);
         $stmt->execute();
@@ -100,7 +98,7 @@ class StudentOrder
 
     public function delete($id)
     {
-        $query = 'UPDATE ' . $this->table . ' SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id';
+        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
 
