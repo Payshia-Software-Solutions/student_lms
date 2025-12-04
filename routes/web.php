@@ -7,6 +7,8 @@ require_once __DIR__ . '/../middleware/ApiKeyAuthMiddleware.php';
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Enrollment.php';
+require_once __DIR__ . '/../models/OrderableItem.php';
+require_once __DIR__ . '/../models/StudentOrder.php';
 
 // Instantiate DB & connect
 $database = new Database();
@@ -75,8 +77,12 @@ $StudentPaymentCourseRoutes = require_once __DIR__ . '/StudentPaymentCourseRoute
 $PaymentRequestRoutes = require_once __DIR__ . '/PaymentRequestRoutes.php';
 $AssignmentRoutes = require_once __DIR__ . '/AssignmentRoutes.php';
 $AssignmentSubmissionRoutes = require_once __DIR__ . '/AssignmentSubmissionRoutes.php';
+$OrderableItemRoutes = require_once __DIR__ . '/OrderableItemRoutes.php';
+$StudentOrderRoutes = require_once __DIR__ . '/StudentOrderRoutes.php';
 
 Enrollment::createTable($GLOBALS['pdo']);
+OrderableItem::createTable($GLOBALS['pdo']);
+StudentOrder::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
@@ -93,6 +99,8 @@ $routes = array_merge(
     $PaymentRequestRoutes,
     $AssignmentRoutes,
     $AssignmentSubmissionRoutes,
+    $OrderableItemRoutes,
+    $StudentOrderRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
