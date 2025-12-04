@@ -30,6 +30,19 @@ class StudentOrderController
         }
     }
 
+    public function getFilteredRecords()
+    {
+        $filters = [
+            'course_id' => $_GET['course_id'] ?? null,
+            'course_bucket_id' => $_GET['course_bucket_id'] ?? null,
+            'status' => $_GET['status'] ?? null
+        ];
+
+        $stmt = $this->studentOrder->getFiltered($filters);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->successResponse($records);
+    }
+
     public function createRecord()
     {
         $data = json_decode(file_get_contents("php://input"), true);
