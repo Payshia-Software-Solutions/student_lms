@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Enrollment.php';
 require_once __DIR__ . '/../models/OrderableItem.php';
 require_once __DIR__ . '/../models/StudentOrder.php';
+require_once __DIR__ . '/../models/UserFullDetails.php';
 
 // Instantiate DB & connect
 $database = new Database();
@@ -81,9 +82,11 @@ $OrderableItemRoutes = require_once __DIR__ . '/OrderableItemRoutes.php';
 $StudentOrderRoutes = require_once __DIR__ . '/StudentOrderRoutes.php';
 $UserFullDetailsRoutes = require_once __DIR__ . '/UserFullDetailsRoutes.php';
 
+
 Enrollment::createTable($GLOBALS['pdo']);
 OrderableItem::createTable($GLOBALS['pdo']);
 StudentOrder::createTable($GLOBALS['pdo']);
+UserFullDetails::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
@@ -102,7 +105,7 @@ $routes = array_merge(
     $AssignmentSubmissionRoutes,
     $OrderableItemRoutes,
     $StudentOrderRoutes,
-    $UserFullDetailsRoutes
+    $UserFullDetailsRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
