@@ -30,13 +30,6 @@ class StudentOrderController
         }
     }
 
-    public function getOrdersByStudent($student_id)
-    {
-        $stmt = $this->studentOrder->readByStudent($student_id);
-        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->successResponse($records);
-    }
-
     public function createRecord()
     {
         $data = json_decode(file_get_contents("php://input"), true);
@@ -48,11 +41,10 @@ class StudentOrderController
         }
     }
 
-    public function updateOrderStatus($id)
+    public function updateRecord($id)
     {
         $data = json_decode(file_get_contents("php://input"), true);
-        $status = $data['order_status'];
-        if ($this->studentOrder->updateStatus($id, $status)) {
+        if ($this->studentOrder->update($id, $data)) {
             $this->successResponse(['id' => $id, 'message' => 'Record updated successfully.']);
         } else {
             $this->errorResponse("Failed to update record.", 500);
