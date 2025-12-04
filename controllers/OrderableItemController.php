@@ -28,52 +28,47 @@ class OrderableItemController
         if ($record) {
             $this->successResponse($record);
         } else {
-            $this->errorResponse("Record not found.", 404);
+            $this->errorResponse('Record not found.', 404);
         }
     }
 
     public function createRecord()
     {
         $data = $_POST;
-        if (isset($_FILES['img_url'])) {
+        if (isset($_FILES['img_url']) && $_FILES['img_url']['error'] == UPLOAD_ERR_OK) {
             $file = $_FILES['img_url'];
             $fileName = basename($file['name']);
-{
-    "student_id": "STU12345",
-    "orderable_item_id": 15,
-    "order_status": "pending",
-    "address_line_1": "No. 42, Main Street",
-    "address_line_2": "Apt. 3B",
-    "city": "Colombo",
-    "district": "Colombo",
-    "postal_code": "00500",
-    "phone_number_1": "0771234567",
-    "phone_number_2": "0112345678"
-}
-            $upload_dir = "orderable_item"; // Use a relative path
-            $remote_file_path = $upload_dir . "/" . $fileName;
 
+            // Define paths relative to the FTP user's root directory
+            $project_dir = 'qa-lms-server.payshia.com';
+            $upload_folder = 'orderable_item';
+            $remote_file_path = $project_dir . '/' . $upload_folder . '/' . $fileName;
+            
             $ftp_conn = ftp_connect($this->ftp_config['server']);
             if (!$ftp_conn) {
-                $this->errorResponse("FTP connection failed.", 500);
+                $this->errorResponse('FTP connection failed.', 500);
                 return;
             }
-            
+
             if (ftp_login($ftp_conn, $this->ftp_config['username'], $this->ftp_config['password'])) {
                 ftp_pasv($ftp_conn, true);
-                
-                // Try to create the directory in the FTP user's root, suppress errors if it already exists
-                @ftp_mkdir($ftp_conn, $upload_dir);
 
-                if (ftp_put($ftp_conn, $remote_file_path, $file['tmp_name'], FTP_BINARY)) {
-                    $data['img_url'] = "https://qa-lms-server.payshia.com/orderable_item/" . $fileName;
+                // Navigate into the project directory and create the upload folder
+                if (@ftp_chdir($ftp_conn, $project_dir)) {
+                    @ftp_mkdir($ftp_conn, $upload_folder);
+                }
+                
+                // Upload the file to the correct path
+                if (ftp_put($ftp_conn, $upload_folder . '/' . $fileName, $file['tmp_name'], FTP_BINARY)) {
+                    $public_url = 'https://' . $project_dir . '/' . $upload_folder . '/' . $fileName;
+                    $data['img_url'] = $public_url;
                 } else {
-                    $this->errorResponse("Failed to upload file to FTP server.", 500);
+                    $this->errorResponse('FTP upload failed. Please check path and permissions.', 500);
                     ftp_close($ftp_conn);
                     return;
                 }
             } else {
-                $this->errorResponse("FTP login failed.", 500);
+                $this->errorResponse('FTP login failed.', 500);
                 ftp_close($ftp_conn);
                 return;
             }
@@ -84,17 +79,17 @@ class OrderableItemController
         if ($id) {
             $this->successResponse(['id' => $id, 'message' => 'Record created successfully.'], 201);
         } else {
-            $this->errorResponse("Failed to create record.", 500);
+            $this->errorResponse('Failed to create record.', 500);
         }
     }
 
     public function updateRecord($id)
     {
-        $data = json_decode(file_get_contents("php://input"), true);
+        $data = json_decode(file_get_contents('php://input'), true);
         if ($this->orderableItem->update($id, $data)) {
             $this->successResponse(['id' => $id, 'message' => 'Record updated successfully.']);
         } else {
-            $this->errorResponse("Failed to update record.", 500);
+            $this->errorResponse('Failed to update record.', 500);
         }
     }
 
@@ -103,7 +98,7 @@ class OrderableItemController
         if ($this->orderableItem->delete($id)) {
             $this->successResponse(['id' => $id, 'message' => 'Record deleted successfully.']);
         } else {
-            $this->errorResponse("Failed to delete record.", 500);
+            $this->errorResponse('Failed to delete record.', 500);
         }
     }
 
