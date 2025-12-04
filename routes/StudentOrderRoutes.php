@@ -30,9 +30,9 @@ return [
         'handler' => [$studentOrderController, 'createRecord'],
         'auth' => 'user'
     ],
-    'PUT /student-orders/{id}/status/' => [
+    'POST /student-orders/{id}/' => [
         'handler' => function ($id) use ($studentOrderController) {
-            $studentOrderController->updateOrderStatus($id);
+            $studentOrderController->updateRecord($id);
         },
         'auth' => 'admin'
     ],

@@ -117,23 +117,25 @@ class StudentOrder
 
     public function update($id, $data)
     {
-        $query = 'UPDATE ' . $this->table . ' SET student_number = :student_number, orderable_item_id = :orderable_item_id, order_status = :order_status, tracking_number = :tracking_number, cod_amount = :cod_amount, package_weight = :package_weight, order_date = :order_date, delivery_date = :delivery_date WHERE id = :id';
+        $fields = [];
+        $params = [':id' => $id];
+        $allowed_fields = ['student_number', 'orderable_item_id', 'order_status', 'tracking_number', 'cod_amount', 'package_weight', 'order_date', 'delivery_date'];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowed_fields)) {
+                $fields[] = "`$key` = :$key";
+                $params[":$key"] = htmlspecialchars(strip_tags($value));
+            }
+        }
+
+        if (empty($fields)) {
+            return false; // No valid fields to update
+        }
+
+        $query = "UPDATE " . $this->table . " SET " . implode(', ', $fields) . " WHERE `id` = :id";
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':student_number', $data['student_number']);
-        $stmt->bindParam(':orderable_item_id', $data['orderable_item_id']);
-        $stmt->bindParam(':order_status', $data['order_status']);
-        $stmt->bindParam(':tracking_number', $data['tracking_number']);
-        $stmt->bindParam(':cod_amount', $data['cod_amount']);
-        $stmt->bindParam(':package_weight', $data['package_weight']);
-        $stmt->bindParam(':order_date', $data['order_date']);
-        $stmt->bindParam(':delivery_date', $data['delivery_date']);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute($params);
     }
 
     public function delete($id)
