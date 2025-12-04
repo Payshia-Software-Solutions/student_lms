@@ -79,6 +79,7 @@ $AssignmentRoutes = require_once __DIR__ . '/AssignmentRoutes.php';
 $AssignmentSubmissionRoutes = require_once __DIR__ . '/AssignmentSubmissionRoutes.php';
 $OrderableItemRoutes = require_once __DIR__ . '/OrderableItemRoutes.php';
 $StudentOrderRoutes = require_once __DIR__ . '/StudentOrderRoutes.php';
+$UserFullDetailsRoutes = require_once __DIR__ . '/UserFullDetailsRoutes.php';
 
 Enrollment::createTable($GLOBALS['pdo']);
 OrderableItem::createTable($GLOBALS['pdo']);
@@ -101,6 +102,7 @@ $routes = array_merge(
     $AssignmentSubmissionRoutes,
     $OrderableItemRoutes,
     $StudentOrderRoutes,
+    $UserFullDetailsRoutes
     [
         'GET /ping/' => [
             'handler' => function () {
