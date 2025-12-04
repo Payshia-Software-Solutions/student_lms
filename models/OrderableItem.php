@@ -7,6 +7,7 @@ class OrderableItem
 
     public $id;
     public $name;
+    public $description;
     public $price;
     public $course_id;
     public $course_bucket_id;
@@ -21,7 +22,7 @@ class OrderableItem
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `orderable_item` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `name` VARCHAR(255) NOT NULL,\n            `price` DECIMAL(10,2) NOT NULL,\n            `course_id` INT NOT NULL,\n            `course_bucket_id` INT NOT NULL,\n            `img_url` VARCHAR(255) NOT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        $query = "CREATE TABLE IF NOT EXISTS `orderable_item` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `name` VARCHAR(255) NOT NULL,\n            `description` TEXT,\n            `price` DECIMAL(10,2) NOT NULL,\n            `course_id` INT NOT NULL,\n            `course_bucket_id` INT NOT NULL,\n            `img_url` VARCHAR(255) NOT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         );";
 
         try {
@@ -52,10 +53,11 @@ class OrderableItem
 
     public function create($data)
     {
-        $query = 'INSERT INTO ' . $this->table . ' (name, price, course_id, course_bucket_id, img_url) VALUES (:name, :price, :course_id, :course_bucket_id, :img_url)';
+        $query = 'INSERT INTO ' . $this->table . ' (name, description, price, course_id, course_bucket_id, img_url) VALUES (:name, :description, :price, :course_id, :course_bucket_id, :img_url)';
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':price', $data['price']);
         $stmt->bindParam(':course_id', $data['course_id']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
@@ -69,11 +71,12 @@ class OrderableItem
 
     public function update($id, $data)
     {
-        $query = 'UPDATE ' . $this->table . ' SET name = :name, price = :price, course_id = :course_id, course_bucket_id = :course_bucket_id, img_url = :img_url WHERE id = :id';
+        $query = 'UPDATE ' . $this->table . ' SET name = :name, description = :description, price = :price, course_id = :course_id, course_bucket_id = :course_bucket_id, img_url = :img_url WHERE id = :id';
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':price', $data['price']);
         $stmt->bindParam(':course_id', $data['course_id']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);

@@ -38,18 +38,18 @@ class OrderableItemController
         if (isset($_FILES['img_url'])) {
             $file = $_FILES['img_url'];
             $fileName = basename($file['name']);
-            $remote_file_path = $this->ftp_config['path'] . $fileName;
+            $remote_file_path = "/public_html/qa-lms-server.payshia.com/orderable_item/" . $fileName;
 
-            $ftp_conn = ftp_connect($this->ftp_config['host']);
+            $ftp_conn = ftp_connect($this->ftp_config['server']);
             if (!$ftp_conn) {
                 $this->errorResponse("FTP connection failed.", 500);
                 return;
             }
             
-            if (ftp_login($ftp_conn, $this->ftp_config['user'], $this->ftp_config['pass'])) {
+            if (ftp_login($ftp_conn, $this->ftp_config['username'], $this->ftp_config['password'])) {
                 ftp_pasv($ftp_conn, true);
                 if (ftp_put($ftp_conn, $remote_file_path, $file['tmp_name'], FTP_BINARY)) {
-                    $data['img_url'] = $this->ftp_config['url_path'] . $fileName;
+                    $data['img_url'] = "https://qa-lms-server.payshia.com/orderable_item/" . $fileName;
                 } else {
                     $this->errorResponse("Failed to upload file to FTP server.", 500);
                     ftp_close($ftp_conn);
