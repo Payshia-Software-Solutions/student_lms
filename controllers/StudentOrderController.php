@@ -1,6 +1,9 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
+require_once __DIR__ . '/../models/OrderableItem.php';
+require_once __DIR__ . '/../models/Course.php';
+require_once __DIR__ . '/../models/CourseBucket.php';
 
 class StudentOrderController
 {
@@ -40,7 +43,26 @@ class StudentOrderController
 
         $stmt = $this->studentOrder->getFiltered($filters);
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->successResponse($records);
+
+        $orderableItem = new OrderableItem($this->pdo);
+        $course = new Course($this->pdo);
+        $courseBucket = new CourseBucket($this->pdo);
+
+        $result = [];
+        foreach ($records as $record) {
+            $orderableItemDetails = $orderableItem->read_single($record['orderable_item_id']);
+            $record['orderable_item_name'] = $orderableItemDetails['name'];
+
+            $courseDetails = $course->getById($record['course_id']);
+            $record['course_name'] = $courseDetails['course_name'];
+
+            $courseBucketDetails = $courseBucket->getById($record['course_bucket_id']);
+            $record['course_bucket_name'] = $courseBucketDetails['name'];
+
+            $result[] = $record;
+        }
+
+        $this->successResponse($result);
     }
 
     public function createRecord()
