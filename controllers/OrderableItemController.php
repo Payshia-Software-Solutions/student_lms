@@ -38,7 +38,7 @@ class OrderableItemController
         if (isset($_FILES['img_url'])) {
             $file = $_FILES['img_url'];
             $fileName = basename($file['name']);
-            $upload_dir = "/public_html/qa-lms-server.payshia.com/orderable_item";
+            $upload_dir = "orderable_item"; // Use a relative path
             $remote_file_path = $upload_dir . "/" . $fileName;
 
             $ftp_conn = ftp_connect($this->ftp_config['server']);
@@ -50,7 +50,7 @@ class OrderableItemController
             if (ftp_login($ftp_conn, $this->ftp_config['username'], $this->ftp_config['password'])) {
                 ftp_pasv($ftp_conn, true);
                 
-                // Try to create the directory, suppress errors if it already exists
+                // Try to create the directory in the FTP user's root, suppress errors if it already exists
                 @ftp_mkdir($ftp_conn, $upload_dir);
 
                 if (ftp_put($ftp_conn, $remote_file_path, $file['tmp_name'], FTP_BINARY)) {
