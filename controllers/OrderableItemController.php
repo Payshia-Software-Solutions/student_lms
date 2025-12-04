@@ -31,6 +31,21 @@ class OrderableItemController
             $this->errorResponse('Record not found.', 404);
         }
     }
+    
+    public function getRecordsByCourse()
+    {
+        if (isset($_GET['course_id']) && isset($_GET['course_bucket_id'])) {
+            $course_id = $_GET['course_id'];
+            $course_bucket_id = $_GET['course_bucket_id'];
+            
+            $stmt = $this->orderableItem->readByCourse($course_id, $course_bucket_id);
+            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->successResponse($records);
+        } else {
+            $this->errorResponse('Missing required parameters: course_id and course_bucket_id.', 400);
+        }
+    }
 
     public function createRecord()
     {

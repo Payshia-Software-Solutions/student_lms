@@ -50,6 +50,16 @@ class OrderableItem
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    
+    public function readByCourse($course_id, $course_bucket_id)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE course_id = :course_id AND course_bucket_id = :course_bucket_id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':course_id', $course_id);
+        $stmt->bindParam(':course_bucket_id', $course_bucket_id);
+        $stmt->execute();
+        return $stmt;
+    }
 
     public function create($data)
     {
