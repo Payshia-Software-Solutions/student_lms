@@ -16,7 +16,7 @@ return [
         },
         'auth' => 'user'
     ],
-    'GET /user-full-details/student/' => [
+    'GET /user-full-details/get/student/' => [
         'handler' => [$userFullDetailsController, 'getRecordByStudentNumberQuery'],
         'auth' => 'user'
     ],
