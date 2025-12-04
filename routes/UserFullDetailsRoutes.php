@@ -16,7 +16,7 @@ return [
         },
         'auth' => 'user'
     ],
-    'POST /user-full-details/get/' => [
+    'POST /user-full-details/' => [
         'handler' => [$userFullDetailsController, 'createRecord'],
         'auth' => 'admin'
     ],
