@@ -1,4 +1,3 @@
-
 <?php
 
 require_once __DIR__ . '/../models/UserFullDetails.php';
@@ -16,13 +15,9 @@ class UserFullDetailsController
 
     public function getAllRecords()
     {
-        if (isset($_GET['student_number'])) {
-            $this->getRecordByStudentNumber($_GET['student_number']);
-        } else {
-            $stmt = $this->userFullDetails->read();
-            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $this->successResponse($records);
-        }
+        $stmt = $this->userFullDetails->read();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->successResponse($records);
     }
 
     public function getRecordById($id)
@@ -42,6 +37,15 @@ class UserFullDetailsController
             $this->successResponse(['found' => true, 'data' => $record]);
         } else {
             $this->successResponse(['found' => false, 'data' => null]);
+        }
+    }
+
+    public function getRecordByStudentNumberQuery()
+    {
+        if (isset($_GET['student_number'])) {
+            $this->getRecordByStudentNumber($_GET['student_number']);
+        } else {
+            $this->errorResponse("Student number is required.", 400);
         }
     }
 

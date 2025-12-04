@@ -16,6 +16,10 @@ return [
         },
         'auth' => 'user'
     ],
+    'GET /user-full-details/student/' => [
+        'handler' => [$userFullDetailsController, 'getRecordByStudentNumberQuery'],
+        'auth' => 'user'
+    ],
     'POST /user-full-details/' => [
         'handler' => [$userFullDetailsController, 'createRecord'],
         'auth' => 'admin'
