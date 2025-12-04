@@ -11,6 +11,10 @@ return [
         'handler' => [$orderableItemController, 'getAllRecords'],
         'auth' => 'user'
     ],
+    'GET /orderable-items/by-course/' => [
+        'handler' => [$orderableItemController, 'getRecordsByCourse'],
+        'auth' => 'user'
+    ],
     'GET /orderable-items/{id}/' => [
         'handler' => function ($id) use ($orderableItemController) {
             $orderableItemController->getRecordById($id);
