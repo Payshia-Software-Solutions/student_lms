@@ -38,6 +38,18 @@ class OrderableItemController
         if (isset($_FILES['img_url'])) {
             $file = $_FILES['img_url'];
             $fileName = basename($file['name']);
+{
+    "student_id": "STU12345",
+    "orderable_item_id": 15,
+    "order_status": "pending",
+    "address_line_1": "No. 42, Main Street",
+    "address_line_2": "Apt. 3B",
+    "city": "Colombo",
+    "district": "Colombo",
+    "postal_code": "00500",
+    "phone_number_1": "0771234567",
+    "phone_number_2": "0112345678"
+}
             $upload_dir = "orderable_item"; // Use a relative path
             $remote_file_path = $upload_dir . "/" . $fileName;
 
