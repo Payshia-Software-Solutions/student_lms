@@ -6,9 +6,14 @@ class StudentOrder
     private $table = 'student_order_table';
 
     public $id;
-    public $student_id;
+    public $student_number;
     public $orderable_item_id;
     public $order_status;
+    public $tracking_number;
+    public $cod_amount;
+    public $package_weight;
+    public $order_date;
+    public $delivery_date;
     public $created_at;
     public $updated_at;
 
@@ -24,6 +29,11 @@ class StudentOrder
             `student_number` VARCHAR(50) NOT NULL,
             `orderable_item_id` INT NOT NULL,
             `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',
+            `tracking_number` VARCHAR(50) DEFAULT NULL,
+            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,
+            `package_weight` DECIMAL(10, 2) DEFAULT NULL,
+            `order_date` DATE DEFAULT NULL,
+            `delivery_date` DATE DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)
@@ -87,12 +97,17 @@ class StudentOrder
 
     public function create($data)
     {
-        $query = 'INSERT INTO ' . $this->table . ' (student_id, orderable_item_id, order_status) VALUES (:student_id, :orderable_item_id, :order_status)';
+        $query = 'INSERT INTO ' . $this->table . ' (student_number, orderable_item_id, order_status, tracking_number, cod_amount, package_weight, order_date, delivery_date) VALUES (:student_number, :orderable_item_id, :order_status, :tracking_number, :cod_amount, :package_weight, :order_date, :delivery_date)';
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindParam(':student_id', $data['student_id']);
+        $stmt->bindParam(':student_number', $data['student_number']);
         $stmt->bindParam(':orderable_item_id', $data['orderable_item_id']);
         $stmt->bindParam(':order_status', $data['order_status']);
+        $stmt->bindParam(':tracking_number', $data['tracking_number']);
+        $stmt->bindParam(':cod_amount', $data['cod_amount']);
+        $stmt->bindParam(':package_weight', $data['package_weight']);
+        $stmt->bindParam(':order_date', $data['order_date']);
+        $stmt->bindParam(':delivery_date', $data['delivery_date']);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
@@ -102,13 +117,18 @@ class StudentOrder
 
     public function update($id, $data)
     {
-        $query = 'UPDATE ' . $this->table . ' SET student_id = :student_id, orderable_item_id = :orderable_item_id, order_status = :order_status WHERE id = :id';
+        $query = 'UPDATE ' . $this->table . ' SET student_number = :student_number, orderable_item_id = :orderable_item_id, order_status = :order_status, tracking_number = :tracking_number, cod_amount = :cod_amount, package_weight = :package_weight, order_date = :order_date, delivery_date = :delivery_date WHERE id = :id';
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':student_id', $data['student_id']);
+        $stmt->bindParam(':student_number', $data['student_number']);
         $stmt->bindParam(':orderable_item_id', $data['orderable_item_id']);
         $stmt->bindParam(':order_status', $data['order_status']);
+        $stmt->bindParam(':tracking_number', $data['tracking_number']);
+        $stmt->bindParam(':cod_amount', $data['cod_amount']);
+        $stmt->bindParam(':package_weight', $data['package_weight']);
+        $stmt->bindParam(':order_date', $data['order_date']);
+        $stmt->bindParam(':delivery_date', $data['delivery_date']);
 
         if ($stmt->execute()) {
             return true;
