@@ -16,21 +16,15 @@ return [
         },
         'auth' => 'user'
     ],
-    'GET /user-full-details/student/{student_number}/' => [
-        'handler' => function ($student_number) use ($userFullDetailsController) {
-            $userFullDetailsController->getRecordByStudentNumber($student_number);
-        },
-        'auth' => 'user'
-    ],
     'POST /user-full-details/' => [
         'handler' => [$userFullDetailsController, 'createRecord'],
-        'auth' => 'user'
+        'auth' => 'admin'
     ],
     'PUT /user-full-details/{id}/' => [
         'handler' => function ($id) use ($userFullDetailsController) {
             $userFullDetailsController->updateRecord($id);
         },
-        'auth' => 'user'
+        'auth' => 'admin'
     ],
     'DELETE /user-full-details/{id}/' => [
         'handler' => function ($id) use ($userFullDetailsController) {
