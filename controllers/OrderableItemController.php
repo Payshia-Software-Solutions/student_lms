@@ -38,7 +38,8 @@ class OrderableItemController
         if (isset($_FILES['img_url'])) {
             $file = $_FILES['img_url'];
             $fileName = basename($file['name']);
-            $remote_file_path = "/public_html/qa-lms-server.payshia.com/orderable_item/" . $fileName;
+            $upload_dir = "/public_html/qa-lms-server.payshia.com/orderable_item";
+            $remote_file_path = $upload_dir . "/" . $fileName;
 
             $ftp_conn = ftp_connect($this->ftp_config['server']);
             if (!$ftp_conn) {
@@ -48,6 +49,10 @@ class OrderableItemController
             
             if (ftp_login($ftp_conn, $this->ftp_config['username'], $this->ftp_config['password'])) {
                 ftp_pasv($ftp_conn, true);
+                
+                // Try to create the directory, suppress errors if it already exists
+                @ftp_mkdir($ftp_conn, $upload_dir);
+
                 if (ftp_put($ftp_conn, $remote_file_path, $file['tmp_name'], FTP_BINARY)) {
                     $data['img_url'] = "https://qa-lms-server.payshia.com/orderable_item/" . $fileName;
                 } else {
