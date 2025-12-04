@@ -3,7 +3,7 @@
 class StudentOrder
 {
     private $conn;
-    private $table = 'student_order';
+    private $table = 'student_order_table';
 
     public $id;
     public $student_id;
@@ -19,9 +19,9 @@ class StudentOrder
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `student_order` (
+        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `student_id` INT NOT NULL,
+            `student_number` VARCHAR(50) NOT NULL,
             `orderable_item_id` INT NOT NULL,
             `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
