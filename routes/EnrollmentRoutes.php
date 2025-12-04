@@ -5,51 +5,43 @@ require_once __DIR__ . '/../controllers/EnrollmentController.php';
 $enrollmentController = new EnrollmentController($GLOBALS['pdo']);
 
 return [
+    // Most specific routes first
+    'GET /enrollments/student/{student_id}/approved/' => [
+        'handler' => function($student_id) use ($enrollmentController) {
+            $enrollmentController->getApprovedEnrollmentsForStudent($student_id);
+        },
+        'auth' => 'private'
+    ],
+    'GET /enrollments/student/{student_id}/' => [
+        'handler' => function($student_id) use ($enrollmentController) {
+            $enrollmentController->getEnrollmentsByStudent($student_id);
+        },
+        'auth' => 'private'
+    ],
+    'GET /enrollments/{id}/' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->getRecordById($id);
+        },
+        'auth' => 'private'
+    ],
+    // General collection route last among GETs
     'GET /enrollments/' => [
-        'handler' => function() use ($enrollmentController) {
-            if (isset($_GET['enroll_status'])) {
-                $enrollmentController->getEnrollmentsByStatus($_GET['enroll_status']);
-            } else if (isset($_GET['course_id'])) {
-                $enrollmentController->getEnrollmentsByCourse($_GET['course_id']);
-            } else {
-                $enrollmentController->getEnrollments();
-            }
-        },
-        'auth' => 'private'
-    ],
-    'GET /enrollments/student/{student_id}' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->getEnrollmentsByStudent($params['student_id']);
-        },
-        'auth' => 'private'
-    ],
-    'GET /enrollments/student/{student_id}/approved' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->getApprovedEnrollmentsForStudent($params['student_id']);
-        },
-        'auth' => 'private'
-    ],
-    'GET /enrollments/{id}' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->getRecordById($params['id']);
-        },
+        'handler' => [$enrollmentController, 'getEnrollments'],
         'auth' => 'private'
     ],
     'POST /enrollments/' => [
-        'handler' => function() use ($enrollmentController) {
-            $enrollmentController->createRecord();
+        'handler' => [$enrollmentController, 'createRecord'],
+        'auth' => 'private'
+    ],
+    'PUT /enrollments/{id}/' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->updateRecord($id);
         },
         'auth' => 'private'
     ],
-    'PUT /enrollments/{id}' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->updateRecord($params['id']);
-        },
-        'auth' => 'private'
-    ],
-    'DELETE /enrollments/{id}' => [
-        'handler' => function($params) use ($enrollmentController) {
-            $enrollmentController->deleteRecord($params['id']);
+    'DELETE /enrollments/{id}/' => [
+        'handler' => function($id) use ($enrollmentController) {
+            $enrollmentController->deleteRecord($id);
         },
         'auth' => 'private'
     ]
