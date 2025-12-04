@@ -16,9 +16,13 @@ class UserFullDetailsController
 
     public function getAllRecords()
     {
-        $stmt = $this->userFullDetails->read();
-        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->successResponse($records);
+        if (isset($_GET['student_number'])) {
+            $this->getRecordByStudentNumber($_GET['student_number']);
+        } else {
+            $stmt = $this->userFullDetails->read();
+            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->successResponse($records);
+        }
     }
 
     public function getRecordById($id)
@@ -35,9 +39,9 @@ class UserFullDetailsController
     {
         $record = $this->userFullDetails->read_by_student_number($student_number);
         if ($record) {
-            $this->successResponse($record);
+            $this->successResponse(['found' => true, 'data' => $record]);
         } else {
-            $this->errorResponse("Record not found.", 404);
+            $this->successResponse(['found' => false, 'data' => null]);
         }
     }
 
