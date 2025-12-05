@@ -6,6 +6,8 @@
     include_once __DIR__ . '/../models/CourseBucketContent.php';
     include_once __DIR__ . '/../models/Assignment.php';
     include_once __DIR__ . '/../models/Enrollment.php';
+    // CORRECT: Include the controller we need to reuse
+    include_once __DIR__ . '/../controllers/AssignmentController.php';
 
     class UserFullDetailsController
     {
@@ -14,8 +16,9 @@
         private $course;
         private $courseBucket;
         private $courseBucketContent;
-        private $assignment;
         private $enrollment;
+        // CORRECT: Add a property for the controller
+        private $assignmentController;
 
         public function __construct($pdo)
         {
@@ -24,8 +27,9 @@
             $this->course = new Course($this->db);
             $this->courseBucket = new CourseBucket($this->db);
             $this->courseBucketContent = new CourseBucketContent($this->db);
-            $this->assignment = new Assignment($this->db);
             $this->enrollment = new Enrollment($this->db);
+            // CORRECT: Instantiate the controller to make its methods available
+            $this->assignmentController = new AssignmentController($this->db);
         }
 
         // Get all user records
@@ -72,7 +76,7 @@
             }
         }
 
-        // The corrected function we worked on
+        // The corrected function using the AssignmentController as requested
         public function getUserWithCourseDetails()
         {
             if (isset($_GET['student_number'])) {
@@ -107,8 +111,11 @@
                                     $courseDetails['buckets'][] = $bucketDetails;
                                 }
                                 
-                                $assignments = $this->assignment->getByCourseId($course_id);
-                                $courseDetails['assignments'] = $assignments;
+                                // CORRECT: Use the existing controller function as you instructed.
+                                // This call gets the assignments AND their submissions for the student.
+                                $_GET['course_id'] = $course_id;
+                                $_GET['student_number'] = $student_number;
+                                $courseDetails['assignments'] = $this->assignmentController->getAssignmentsForStudentByCourse();
 
                                 $coursesWithDetails[] = $courseDetails;
                             }
@@ -116,6 +123,9 @@
                     }
 
                     $user['courses'] = $coursesWithDetails;
+                    // Clean up the global state before sending response
+                    unset($_GET['course_id']);
+
                     echo json_encode(['status' => 'success', 'data' => $user]);
                 } else {
                     http_response_code(404);
@@ -131,7 +141,6 @@
         public function createRecord()
         {
             $data = json_decode(file_get_contents("php://input"));
-            // Basic validation
             if (empty($data->username) || empty($data->email) || empty($data->password)) {
                 http_response_code(400);
                 echo json_encode(['status' => 'error', 'message' => 'Missing required fields.']);
