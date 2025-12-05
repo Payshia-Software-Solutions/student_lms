@@ -1,16 +1,19 @@
 <?php
 
 require_once __DIR__ . '/../models/UserFullDetails.php';
+require_once __DIR__ . '/../models/User.php';
 
 class UserFullDetailsController
 {
     private $pdo;
     private $userFullDetails;
+    private $user;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
         $this->userFullDetails = new UserFullDetails($this->pdo);
+        $this->user = new User($this->pdo);
     }
 
     public function getAllRecords()
@@ -43,7 +46,15 @@ class UserFullDetailsController
     public function getRecordByStudentNumberQuery()
     {
         if (isset($_GET['student_number'])) {
-            $this->getRecordByStudentNumber($_GET['student_number']);
+            $student_number = $_GET['student_number'];
+            $user = $this->user->getByStudentNumber($student_number);
+            $userDetails = $this->userFullDetails->read_by_student_number($student_number);
+
+            if ($user || $userDetails) {
+                $this->successResponse(['found' => true, 'data' => array_merge((array)$user, (array)$userDetails)]);
+            } else {
+                $this->successResponse(['found' => false, 'data' => null]);
+            }
         } else {
             $this->errorResponse("Student number is required.", 400);
         }
