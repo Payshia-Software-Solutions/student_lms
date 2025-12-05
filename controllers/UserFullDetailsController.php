@@ -34,11 +34,11 @@
         public function getUserWithCourseDetails()
         {
             if (isset($_GET['student_number'])) {
-                $original_student_number = $_GET['student_number'];
-                $user = $this->user->getByStudentNumber($original_student_number);
+                $student_number = $_GET['student_number'];
+                $user = $this->user->getByStudentNumber($student_number);
 
                 if ($user) {
-                    $enrollments = $this->enrollment->getByStudentAndStatus($original_student_number, 'approved');
+                    $enrollments = $this->enrollment->getByStudentAndStatus($student_number, 'approved');
                     $coursesWithDetails = [];
                     
                     if ($enrollments->rowCount() > 0) {
@@ -65,28 +65,14 @@
                                     $courseDetails['buckets'][] = $bucketDetails;
                                 }
                                 
-                                $_GET['course_id'] = $course_id;
-                                $_GET['student_number'] = $original_student_number;
-
-                                ob_start();
-                                $this->assignmentController->getAssignmentsForStudentByCourse();
-                                $jsonOutput = ob_get_clean();
-
-                                $assignmentsData = json_decode($jsonOutput, true);
-
-                                if ($assignmentsData && isset($assignmentsData['data'])) {
-                                    $courseDetails['assignments'] = $assignmentsData['data'];
-                                } else {
-                                    $courseDetails['assignments'] = [];
-                                }
+                                // CORRECT: Call the new, reusable method directly.
+                                // This is cleaner and avoids all the previous issues.
+                                $courseDetails['assignments'] = $this->assignmentController->fetchAssignmentsAndSubmissionsForStudent($course_id, $student_number);
 
                                 $coursesWithDetails[] = $courseDetails;
                             }
                         }
                     }
-
-                    $_GET['student_number'] = $original_student_number;
-                    unset($_GET['course_id']);
 
                     $user['courses'] = $coursesWithDetails;
                     echo json_encode(['status' => 'success', 'data' => $user]);
@@ -99,6 +85,8 @@
                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
             }
         }
+
+        // --- OTHER FUNCTIONS ---
 
         public function getAllRecords()
         {

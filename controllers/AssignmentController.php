@@ -16,6 +16,43 @@ class AssignmentController
         $this->ftp_config = $ftp_config;
     }
 
+    // NEW, REUSABLE PUBLIC METHOD
+    public function fetchAssignmentsAndSubmissionsForStudent($course_id, $student_number)
+    {
+        $assignments = $this->assignment->getByCourseId($course_id);
+
+        if (!empty($assignments)) {
+            foreach ($assignments as &$assignment) {
+                $filters = [
+                    'assigment_id' => $assignment['id'],
+                    'student_number' => $student_number
+                ];
+                $submissions = $this->assignmentSubmission->getByFilters($filters);
+                $assignment['submissions'] = !empty($submissions) ? $submissions : [];
+            }
+        }
+        return $assignments; // Return the data as an array
+    }
+
+    // EXISTING ENDPOINT - NOW USES THE NEW METHOD
+    public function getAssignmentsForStudentByCourse()
+    {
+        $course_id = filter_input(INPUT_GET, 'course_id', FILTER_SANITIZE_NUMBER_INT);
+        $student_number = filter_input(INPUT_GET, 'student_number', FILTER_SANITIZE_STRING);
+
+        if (!$course_id || !$student_number) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Missing required parameters: course_id, student_number']);
+            return;
+        }
+
+        // Call the new reusable method to get the data
+        $data = $this->fetchAssignmentsAndSubmissionsForStudent($course_id, $student_number);
+
+        // Echo the final response
+        echo json_encode(['status' => 'success', 'data' => $data]);
+    }
+
     public function getAllRecords()
     {
         if (isset($_GET['course_id']) && isset($_GET['course_bucket_id'])) {
@@ -65,44 +102,15 @@ class AssignmentController
         echo json_encode(['status' => 'success', 'data' => $assignments]);
     }
 
-    public function getAssignmentsForStudentByCourse()
-    {
-        $course_id = filter_input(INPUT_GET, 'course_id', FILTER_SANITIZE_NUMBER_INT);
-        $student_number = filter_input(INPUT_GET, 'student_number', FILTER_SANITIZE_STRING);
-
-        if (!$course_id || !$student_number) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Missing required parameters: course_id, student_number']);
-            return;
-        }
-
-        $assignments = $this->assignment->getByCourseId($course_id);
-
-        if (!empty($assignments)) {
-            foreach ($assignments as &$assignment) {
-                $filters = [
-                    'assigment_id' => $assignment['id'],
-                    'student_number' => $student_number
-                ];
-                $submissions = $this->assignmentSubmission->getByFilters($filters);
-                $assignment['submissions'] = !empty($submissions) ? $submissions : [];
-            }
-        }
-
-        echo json_encode(['status' => 'success', 'data' => $assignments]);
-    }
-
     public function createRecord()
     {
         $data = json_decode($_POST['data'], true);
 
-        // Check if a file is uploaded
         if (isset($_FILES['file'])) {
             $file_url = $this->uploadFileViaFTP($_FILES['file']);
             if ($file_url) {
                 $data['file_url'] = $file_url;
             } else {
-                // Error response is handled in uploadFileViaFTP
                 return;
             }
         }
@@ -140,8 +148,6 @@ class AssignmentController
         }
     }
     
-    // --- PRIVATE HELPER METHODS FOR FTP ---
-
     private function uploadFileViaFTP($file)
     {
         $ftp_server = $this->ftp_config['server'];
@@ -171,7 +177,7 @@ class AssignmentController
         }
 
         $file_name = uniqid() . '-' . basename($file['name']);
-        $remote_path = $remote_dir . '/' . $file_.name;
+        $remote_path = $remote_dir . '/' . $file_name;
 
         if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
             http_response_code(500);
