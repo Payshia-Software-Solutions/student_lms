@@ -1,38 +1,97 @@
 <?php
+    include_once __DIR__ . '/../config/Database.php';
+    include_once __DIR__ . '/../models/User.php';
+    include_once __DIR__ . '/../models/StudentCourse.php';
+    include_once __DIR__ . '/../models/Course.php';
+    include_once __DIR__ . '/../models/CourseBucket.php';
+    include_once __DIR__ . '/../models/CourseBucketContent.php';
+    include_once __DIR__ . '/../models/Assignment.php';
+    include_once __DIR__ . '/../models/Enrollment.php';
 
-require_once __DIR__ . '/../models/UserFullDetails.php';
-require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/StudentCourse.php';
-require_once __DIR__ . '/../models/Course.php';
-require_once __DIR__ . '/../models/CourseBucket.php';
-require_once __DIR__ . '/../models/CourseBucketContent.php';
-require_once __DIR__ . '/../models/Assignment.php';
-require_once __DIR__ . '/../models/AssignmentSubmission.php';
-
-class UserFullDetailsController
-{
-    private $pdo;
-    private $userFullDetails;
-    private $user;
-    private $studentCourse;
-    private $course;
-    private $courseBucket;
-    private $courseBucketContent;
-    private $assignment;
-    private $assignmentSubmission;
-
-    public function __construct($pdo)
+    class UserFullDetailsController
     {
-        $this->pdo = $pdo;
-        $this->userFullDetails = new UserFullDetails($this->pdo);
-        $this->user = new User($this->pdo);
-        $this->studentCourse = new StudentCourse($this->pdo);
-        $this->course = new Course($this->pdo);
-        $this->courseBucket = new CourseBucket($this->pdo);
-        $this->courseBucketContent = new CourseBucketContent($this->pdo);
-        $this->assignment = new Assignment($this->pdo);
-        $this->assignmentSubmission = new AssignmentSubmission($this->pdo);
+        private $db;
+        private $user;
+        private $studentCourse;
+        private $course;
+        private $courseBucket;
+        private $courseBucketContent;
+        private $assignment;
+        private $enrollment;
+
+        public function __construct()
+        {
+            $database = new Database();
+            $this->db = $database->connect();
+            $this->user = new User($this->db);
+            $this->studentCourse = new StudentCourse($this->db);
+            $this->course = new Course($this->db);
+            $this->courseBucket = new CourseBucket($this->db);
+            $this->courseBucketContent = new CourseBucketContent($this->db);
+            $this->assignment = new Assignment($this->db);
+            $this->enrollment = new Enrollment($this->db);
+        }
+
+        public function getUserWithCourseDetails()
+        {
+            if (isset($_GET['student_number'])) {
+                $student_number = $_GET['student_number'];
+                $user = $this->user->getByStudentNumber($student_number);
+
+                if ($user) {
+                    // Use Enrollment model to get approved courses
+                    $enrollments = $this->enrollment->getByStudentAndStatus($student_number, 'approved');
+                    $coursesWithDetails = [];
+                    
+                    $enrollment_num = $enrollments->rowCount();
+
+                    if ($enrollment_num > 0) {
+                        while ($enrollment_row = $enrollments->fetch(PDO::FETCH_ASSOC)) {
+                            $course_id = $enrollment_row['course_id'];
+                            $this->course->id = $course_id;
+                            $this->course->read_single();
+
+                            if ($this->course->course_name) {
+                                $courseDetails = [
+                                    'id' => $this->course->id,
+                                    'course_name' => $this->course->course_name,
+                                    'course_description' => $this->course->course_description,
+                                    'course_image' => $this->course->course_image,
+                                    'created_at' => $this->course->created_at,
+                                    'buckets' => []
+                                ];
+
+                                $buckets = $this->courseBucket->getByCourseId($course_id);
+                                while ($bucket_row = $buckets->fetch(PDO::FETCH_ASSOC)) {
+                                    $bucketDetails = $bucket_row;
+                                    $contents = $this->courseBucketContent->getByBucketId($bucket_row['id']);
+                                    $bucketDetails['contents'] = $contents->fetchAll(PDO::FETCH_ASSOC);
+                                    $courseDetails['buckets'][] = $bucketDetails;
+                                }
+                                
+                                $assignments = $this->assignment->getByCourseId($course_id);
+                                $courseDetails['assignments'] = $assignments->fetchAll(PDO::FETCH_ASSOC);
+
+                                $coursesWithDetails[] = $courseDetails;
+                            }
+                        }
+                    }
+
+                    $user['courses'] = $coursesWithDetails;
+                    echo json_encode(['status' => 'success', 'data' => $user]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+            }
+        }
+
+
     }
+
 
     public function getAllRecords()
     {
@@ -78,63 +137,7 @@ class UserFullDetailsController
         }
     }
 
-    public function getUserWithCourseDetails()
-    {
-        if (isset($_GET['student_number'])) {
-            $student_number = $_GET['student_number'];
-            $user = $this->user->getByStudentNumber($student_number);
-
-            if ($user) {
-                $studentCourses = $this->studentCourse->getByStudentNumber($student_number);
-                $coursesWithDetails = [];
-
-                if (!empty($studentCourses)) {
-                    foreach ($studentCourses as $studentCourse) {
-                        $course_id = $studentCourse['course_id'];
-                        $course = $this->course->getById($course_id);
-
-                        if ($course) {
-                            $courseBuckets = $this->courseBucket->getByFilters(['course_id' => $course_id]);
-                            
-                            if (!empty($courseBuckets)) {
-                                foreach ($courseBuckets as &$bucket) {
-                                    // Fetch Bucket Content
-                                    $bucketContents = $this->courseBucketContent->getByFilters(['course_bucket_id' => $bucket['id']]);
-                                    $bucket['content'] = !empty($bucketContents) ? $bucketContents : [];
-
-                                    // Fetch Assignments for the bucket
-                                    $assignments = $this->assignment->getByCourseAndBucket($course_id, $bucket['id']);
-                                    
-                                    if (!empty($assignments)) {
-                                        foreach ($assignments as &$assignment) {
-                                            // Fetch Submissions for each assignment by the student
-                                            $submissionFilters = [
-                                                'assigment_id' => $assignment['id'],
-                                                'student_number' => $student_number
-                                            ];
-                                            $submissions = $this->assignmentSubmission->getByFilters($submissionFilters);
-                                            $assignment['submissions'] = !empty($submissions) ? $submissions : [];
-                                        }
-                                    }
-                                    $bucket['assignments'] = !empty($assignments) ? $assignments : [];
-                                }
-                            }
-                            $course['buckets'] = !empty($courseBuckets) ? $courseBuckets : [];
-                            $coursesWithDetails[] = $course;
-                        }
-                    }
-                }
-
-                $user['courses'] = $coursesWithDetails;
-                $this->successResponse(['found' => true, 'data' => $user]);
-            } else {
-                $this->successResponse(['found' => false, 'data' => null]);
-            }
-        } else {
-            $this->errorResponse("Student number is required.", 400);
-        }
-    }
-
+  
     public function createRecord()
     {
         $data = json_decode(file_get_contents("php://input"), true);
@@ -178,4 +181,4 @@ class UserFullDetailsController
         http_response_code($statusCode);
         echo json_encode(['message' => $message]);
     }
-}
+?>
