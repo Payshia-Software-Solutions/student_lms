@@ -1,12 +1,11 @@
 <?php
     include_once __DIR__ . '/../config/Database.php';
+    include_once __DIR__ . '/../config/ftp.php';
     include_once __DIR__ . '/../models/User.php';
     include_once __DIR__ . '/../models/Course.php';
     include_once __DIR__ . '/../models/CourseBucket.php';
     include_once __DIR__ . '/../models/CourseBucketContent.php';
-    include_once __DIR__ . '/../models/Assignment.php';
     include_once __DIR__ . '/../models/Enrollment.php';
-    // CORRECT: Include the controller we need to reuse
     include_once __DIR__ . '/../controllers/AssignmentController.php';
 
     class UserFullDetailsController
@@ -17,74 +16,29 @@
         private $courseBucket;
         private $courseBucketContent;
         private $enrollment;
-        // CORRECT: Add a property for the controller
         private $assignmentController;
 
         public function __construct($pdo)
         {
+            global $ftp_config;
+
             $this->db = $pdo;
             $this->user = new User($this->db);
             $this->course = new Course($this->db);
             $this->courseBucket = new CourseBucket($this->db);
             $this->courseBucketContent = new CourseBucketContent($this->db);
             $this->enrollment = new Enrollment($this->db);
-            // CORRECT: Instantiate the controller to make its methods available
-            $this->assignmentController = new AssignmentController($this->db);
+            $this->assignmentController = new AssignmentController($this->db, $ftp_config);
         }
 
-        // Get all user records
-        public function getAllRecords()
-        {
-            $stmt = $this->user->read();
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['status' => 'success', 'data' => $users]);
-        }
-
-        // Get a single user by ID
-        public function getRecordById($id)
-        {
-            $this->user->id = $id;
-            if ($this->user->read_single()) {
-                $user_data = [
-                    'id' => $this->user->id,
-                    'username' => $this->user->username,
-                    'email' => $this->user->email,
-                    'student_number' => $this->user->student_number
-                ];
-                echo json_encode(['status' => 'success', 'data' => $user_data]);
-            } else {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'User not found.']);
-            }
-        }
-
-        // Get user by student number from query param
-        public function getRecordByStudentNumberQuery()
-        {
-            if (isset($_GET['student_number'])) {
-                $student_number = $_GET['student_number'];
-                $user_data = $this->user->getByStudentNumber($student_number);
-                if ($user_data) {
-                    echo json_encode(['status' => 'success', 'data' => $user_data]);
-                } else {
-                    http_response_code(404);
-                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
-                }
-            } else {
-                 http_response_code(400);
-                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
-            }
-        }
-
-        // The corrected function using the AssignmentController as requested
         public function getUserWithCourseDetails()
         {
             if (isset($_GET['student_number'])) {
-                $student_number = $_GET['student_number'];
-                $user = $this->user->getByStudentNumber($student_number);
+                $original_student_number = $_GET['student_number'];
+                $user = $this->user->getByStudentNumber($original_student_number);
 
                 if ($user) {
-                    $enrollments = $this->enrollment->getByStudentAndStatus($student_number, 'approved');
+                    $enrollments = $this->enrollment->getByStudentAndStatus($original_student_number, 'approved');
                     $coursesWithDetails = [];
                     
                     if ($enrollments->rowCount() > 0) {
@@ -111,21 +65,30 @@
                                     $courseDetails['buckets'][] = $bucketDetails;
                                 }
                                 
-                                // CORRECT: Use the existing controller function as you instructed.
-                                // This call gets the assignments AND their submissions for the student.
                                 $_GET['course_id'] = $course_id;
-                                $_GET['student_number'] = $student_number;
-                                $courseDetails['assignments'] = $this->assignmentController->getAssignmentsForStudentByCourse();
+                                $_GET['student_number'] = $original_student_number;
+
+                                ob_start();
+                                $this->assignmentController->getAssignmentsForStudentByCourse();
+                                $jsonOutput = ob_get_clean();
+
+                                $assignmentsData = json_decode($jsonOutput, true);
+
+                                if ($assignmentsData && isset($assignmentsData['data'])) {
+                                    $courseDetails['assignments'] = $assignmentsData['data'];
+                                } else {
+                                    $courseDetails['assignments'] = [];
+                                }
 
                                 $coursesWithDetails[] = $courseDetails;
                             }
                         }
                     }
 
-                    $user['courses'] = $coursesWithDetails;
-                    // Clean up the global state before sending response
+                    $_GET['student_number'] = $original_student_number;
                     unset($_GET['course_id']);
 
+                    $user['courses'] = $coursesWithDetails;
                     echo json_encode(['status' => 'success', 'data' => $user]);
                 } else {
                     http_response_code(404);
@@ -137,7 +100,47 @@
             }
         }
 
-        // Create a new user record
+        public function getAllRecords()
+        {
+            $stmt = $this->user->read();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['status' => 'success', 'data' => $users]);
+        }
+
+        public function getRecordById($id)
+        {
+            $this->user->id = $id;
+            if ($this->user->read_single()) {
+                $user_data = [
+                    'id' => $this->user->id,
+                    'username' => $this->user->username,
+                    'email' => $this->user->email,
+                    'student_number' => $this->user->student_number
+                ];
+                echo json_encode(['status' => 'success', 'data' => $user_data]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+            }
+        }
+
+        public function getRecordByStudentNumberQuery()
+        {
+            if (isset($_GET['student_number'])) {
+                $student_number = $_GET['student_number'];
+                $user_data = $this->user->getByStudentNumber($student_number);
+                if ($user_data) {
+                    echo json_encode(['status' => 'success', 'data' => $user_data]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+                }
+            } else {
+                 http_response_code(400);
+                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+            }
+        }
+
         public function createRecord()
         {
             $data = json_decode(file_get_contents("php://input"));
@@ -155,7 +158,6 @@
             }
         }
 
-        // Update a user record
         public function updateRecord($id)
         {
             $data = json_decode(file_get_contents("php://input"));
@@ -167,7 +169,6 @@
             }
         }
 
-        // Delete a user record
         public function deleteRecord($id)
         {
             if ($this->user->delete($id)) {
