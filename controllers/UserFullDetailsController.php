@@ -59,14 +59,10 @@
 
                                 $buckets = $this->courseBucket->getByCourseId($course_id);
                                 while ($bucket_row = $buckets->fetch(PDO::FETCH_ASSOC)) {
-                                    $bucketDetails = $bucket_row;
-                                    $contents = $this->courseBucketContent->getByCourseBucketId($bucket_row['id']);
-                                    $bucketDetails['contents'] = $contents;
-                                    $courseDetails['buckets'][] = $bucketDetails;
+                                    // CORRECT: Only add the bucket details, not the content within it.
+                                    $courseDetails['buckets'][] = $bucket_row;
                                 }
                                 
-                                // CORRECT: Call the new, reusable method directly.
-                                // This is cleaner and avoids all the previous issues.
                                 $courseDetails['assignments'] = $this->assignmentController->fetchAssignmentsAndSubmissionsForStudent($course_id, $student_number);
 
                                 $coursesWithDetails[] = $courseDetails;
