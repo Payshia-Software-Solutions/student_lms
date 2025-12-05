@@ -11,8 +11,8 @@ return [
         'handler' => [$assignmentController, 'getAllRecords'],
         'auth' => 'user'
     ],
-    'GET /assignments/full/submissions/' => [
-        'handler' => [$assignmentController, 'getAssignmentsWithSubmissions'],
+    'GET /assignments/student-course/' => [
+        'handler' => [$assignmentController, 'getAssignmentsForStudentByCourse'],
         'auth' => 'user'
     ],
     'GET /assignments/{id}/' => [
