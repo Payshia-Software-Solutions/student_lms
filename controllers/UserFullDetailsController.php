@@ -102,8 +102,8 @@
                                 $buckets = $this->courseBucket->getByCourseId($course_id);
                                 while ($bucket_row = $buckets->fetch(PDO::FETCH_ASSOC)) {
                                     $bucketDetails = $bucket_row;
-                                    $contents = $this->courseBucketContent->getByBucketId($bucket_row['id']);
-                                    $bucketDetails['contents'] = $contents->fetchAll(PDO::FETCH_ASSOC);
+                                    $contents = $this->courseBucketContent->getByCourseBucketId($bucket_row['id']);
+                                    $bucketDetails['contents'] = $contents;
                                     $courseDetails['buckets'][] = $bucketDetails;
                                 }
                                 
