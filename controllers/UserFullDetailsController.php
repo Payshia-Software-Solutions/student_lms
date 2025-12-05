@@ -90,7 +90,7 @@
         }
 
 
-    }
+    
 
 
     public function getAllRecords()
@@ -181,4 +181,6 @@
         http_response_code($statusCode);
         echo json_encode(['message' => $message]);
     }
+
+}
 ?>
