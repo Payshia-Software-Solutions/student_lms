@@ -1,285 +1,148 @@
 <?php
-
-class Enrollment
-{
-    private $conn;
-    private $table = 'enrollments';
-
-    public $id;
-    public $student_id;
-    public $course_id;
-    public $enrollment_date;
-    public $grade;
-    public $status;
-    public $created_at;
-    public $updated_at;
-    public $deleted_at;
-
-    public function __construct($db)
+    class Enrollment
     {
-        $this->conn = $db;
-    }
+        private $conn;
+        private $table = 'enrollments';
 
-    public static function createTable($db)
-{
-    $query = "CREATE TABLE IF NOT EXISTS `enrollments` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `student_id` varchar(55) NOT NULL COMMENT 'References users.student_number',
-        `course_id` int(11) NOT NULL COMMENT 'References courses.id',
-        `enrollment_date` date DEFAULT NULL,
-        `grade` varchar(2) DEFAULT NULL,
-        `status` enum('pending','rejected','approved') DEFAULT 'pending',
-        `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP(),
-        `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
-        `deleted_at` timestamp NULL DEFAULT NULL,
-        PRIMARY KEY (`id`),
-        -- Index for student_id is already defined as a KEY, making it a foreign key below
-        KEY `student_id` (`student_id`), 
-        KEY `course_id` (`course_id`),
-        
-        -- FIX/IMPROVEMENT: Added Foreign Key for student_id
-        CONSTRAINT `fk_enrollments_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`student_number`) ON DELETE CASCADE,
-        
-        -- Existing Foreign Key for course_id (renamed for clarity)
-        CONSTRAINT `fk_enrollments_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        public $id;
+        public $student_id;
+        public $course_id;
+        public $enrollment_date;
+        public $grade;
+        public $status;
+        public $created_at;
+        public $updated_at;
+        public $deleted_at;
 
-    try {
-        $stmt = $db->prepare($query);
-        $stmt->execute();
-        // Optional: return true or log success if needed
-    } catch (PDOException $e) {
-        // Log the error message to the server's error log
-        error_log("Table Creation Error: " . $e->getMessage());
-        // Optional: Re-throw the exception or return false
-    }
-}
+        public function __construct($db)
+        {
+            $this->conn = $db;
+        }
 
-    public function read()
-    {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
+        public function read()
+        {
+            $query = 'SELECT e.*, c.course_name, u.name as student_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id JOIN users u ON e.student_id = u.student_id WHERE e.deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt;
+        }
+
+        public function read_single()
+        {
+            $query = 'SELECT e.*, c.course_name, u.name as student_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id JOIN users u ON e.student_id = u.student_id WHERE e.id = :id AND e.deleted_at IS NULL';
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $this->id);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                $this->student_id = $row['student_id'];
+                $this->course_id = $row['course_id'];
+                $this->enrollment_date = $row['enrollment_date'];
+                $this->grade = $row['grade'];
+                $this->status = $row['status'];
+                return true;
+            }
+            return false;
+        }
+
+        public function create()
+        {
+            $query = 'INSERT INTO ' . $this->table . ' (student_id, course_id, status) VALUES (:student_id, :course_id, :status)';
+            $stmt = $this->conn->prepare($query);
+
+            $this->student_id = htmlspecialchars(strip_tags($this->student_id));
+            $this->course_id = htmlspecialchars(strip_tags($this->course_id));
+            $this->status = htmlspecialchars(strip_tags($this->status));
+
+            $stmt->bindParam(':student_id', $this->student_id);
+            $stmt->bindParam(':course_id', $this->course_id);
+            $stmt->bindParam(':status', $this->status);
+
+            if ($stmt->execute()) {
+                $this->id = $this->conn->lastInsertId();
+                return true;
+            }
+            return false;
+        }
+
+        public function update()
+        {
+            $query = 'UPDATE ' . $this->table . ' SET student_id = :student_id, course_id = :course_id, enrollment_date = :enrollment_date, grade = :grade, status = :status WHERE id = :id AND deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
+
+            $this->id = htmlspecialchars(strip_tags($this->id));
+            $this->student_id = htmlspecialchars(strip_tags($this->student_id));
+            $this->course_id = htmlspecialchars(strip_tags($this->course_id));
+            $this->enrollment_date = htmlspecialchars(strip_tags($this->enrollment_date));
+            $this->grade = htmlspecialchars(strip_tags($this->grade));
+            $this->status = htmlspecialchars(strip_tags($this->status));
+
+            $stmt->bindParam(':id', $this->id);
+            $stmt->bindParam(':student_id', $this->student_id);
+            $stmt->bindParam(':course_id', $this->course_id);
+            $stmt->bindParam(':enrollment_date', $this->enrollment_date);
+            $stmt->bindParam(':grade', $this->grade);
+            $stmt->bindParam(':status', $this->status);
+
+            if ($stmt->execute()) {
+                return true;
+            }
+            return false;
+        }
+
+        public function delete()
+        {
+            $query = 'UPDATE ' . $this->table . ' SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id';
+            $stmt = $this->conn->prepare($query);
+
+            $this->id = htmlspecialchars(strip_tags($this->id));
+            $stmt->bindParam(':id', $this->id);
+
+            if ($stmt->execute()) {
+                return true;
+            }
+            return false;
+        }
+
+        public function getApprovedByStudent($student_id)
+        {
+            $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = \'approved\' AND deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
     
-    public function getByCourseIdWithCourseName($course_id)
-    {
-        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.course_id = :course_id AND e.deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
+            $student_id = htmlspecialchars(strip_tags($student_id));
+            $stmt->bindParam(':student_id', $student_id);
+    
+            $stmt->execute();
+            return $stmt;
+        }
+    
+        public function getByStudentAndStatus($student_id, $status)
+        {
+            $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.student_id = :student_id AND e.status = :status AND e.deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
 
-        $course_id = htmlspecialchars(strip_tags($course_id));
-        $stmt->bindParam(':course_id', $course_id);
+            $student_id = htmlspecialchars(strip_tags($student_id));
+            $status = htmlspecialchars(strip_tags($status));
 
-        $stmt->execute();
-        return $stmt;
+            $stmt->bindParam(':student_id', $student_id);
+            $stmt->bindParam(':status', $status);
+
+            $stmt->execute();
+            return $stmt;
+        }
+
+        public function getByStudentId($student_id)
+        {
+            $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.student_id = :student_id AND e.deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
+    
+            $student_id = htmlspecialchars(strip_tags($student_id));
+            $stmt->bindParam(':student_id', $student_id);
+    
+            $stmt->execute();
+            return $stmt;
+        }
     }
-
-    public function getByStatus($status)
-    {
-        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.status = :status AND e.deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-
-        $status = htmlspecialchars(strip_tags($status));
-        $stmt->bindParam(':status', $status);
-
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function getStudentsByEnrollmentStatus($status)
-    {
-        $query = 'SELECT
-                u.id AS student_user_id,
-                u.f_name,
-                u.l_name,
-                u.email,
-                u.student_number,
-                e.id AS enrollment_id,
-                e.status AS enrollment_status,
-                e.enrollment_date,
-                c.id AS course_id,
-                c.course_name
-                FROM
-                enrollments e
-                JOIN
-                users u ON e.student_id = u.student_number
-                JOIN
-                courses c ON e.course_id = c.id
-                WHERE
-                e.status = :status AND e.deleted_at IS NULL;';
-
-        $stmt = $this->conn->prepare($query);
-
-        $status = htmlspecialchars(strip_tags($status));
-        $stmt->bindParam(':status', $status);
-
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function getApprovedByStudent($student_id)
-    {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = \'approved\' AND deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-
-        $student_id = htmlspecialchars(strip_tags($student_id));
-        $stmt->bindParam(':student_id', $student_id);
-
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function getByStudentId($student_id)
-    {
-        $query = 'SELECT e.*, c.course_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id WHERE e.student_id = :student_id AND e.deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-
-        $student_id = htmlspecialchars(strip_tags($student_id));
-        $stmt->bindParam(':student_id', $student_id);
-
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function read_single()
-    {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id AND deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $this->id);
-        $stmt->execute();
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row) {
-            $this->student_id = $row['student_id'];
-            $this->course_id = $row['course_id'];
-            $this->enrollment_date = $row['enrollment_date'];
-            $this->grade = $row['grade'];
-            $this->status = $row['status'];
-            return true;
-        }
-        return false;
-    }
-
-    public function read_by_student_and_course($student_id, $course_id)
-    {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND course_id = :course_id AND deleted_at IS NULL';
-        $stmt = $this->conn->prepare($query);
-
-        $student_id = htmlspecialchars(strip_tags($student_id));
-        $course_id = htmlspecialchars(strip_tags($course_id));
-
-        $stmt->bindParam(':student_id', $student_id);
-        $stmt->bindParam(':course_id', $course_id);
-        $stmt->execute();
-
-        return $stmt;
-    }
-
-    public function create($data)
-    {
-        $check_query = 'SELECT id FROM ' . $this->table . ' WHERE student_id = :student_id AND course_id = :course_id AND deleted_at IS NULL';
-        $check_stmt = $this->conn->prepare($check_query);
-
-        $student_id = htmlspecialchars(strip_tags($data->student_id));
-        $course_id = htmlspecialchars(strip_tags($data->course_id));
-
-        $check_stmt->bindParam(':student_id', $student_id);
-        $check_stmt->bindParam(':course_id', $course_id);
-        $check_stmt->execute();
-
-        if ($check_stmt->rowCount() > 0) {
-            return 'exists';
-        }
-
-        $fields = get_object_vars($data);
-
-        if (!isset($fields['status'])) {
-            $fields['status'] = 'pending';
-        }
-
-        $allowed_columns = ['student_id', 'course_id', 'enrollment_date', 'grade', 'status'];
-        $columns = [];
-        $placeholders = [];
-        $values_to_bind = [];
-
-        foreach ($fields as $key => $value) {
-            if (in_array($key, $allowed_columns)) {
-                $columns[] = "`$key`";
-                $placeholders[] = ":$key";
-                $values_to_bind[$key] = htmlspecialchars(strip_tags($value));
-            }
-        }
-
-        if (empty($columns)) {
-            return false;
-        }
-
-        $query = 'INSERT INTO ' . $this->table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-
-        $stmt = $this->conn->prepare($query);
-
-        foreach ($values_to_bind as $key => &$value) {
-            $stmt->bindParam(":$key", $value);
-        }
-
-        if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        }
-
-        error_log("DB Create Error: " . implode(", ", $stmt->errorInfo()));
-        return false;
-    }
-
-    public function update($id, $data)
-    {
-        $fields = get_object_vars($data);
-
-        $allowed_columns = ['student_id', 'course_id', 'enrollment_date', 'grade', 'status'];
-        $set_clauses = [];
-        $values_to_bind = [];
-
-        foreach ($fields as $key => $value) {
-            if (in_array($key, $allowed_columns)) {
-                $set_clauses[] = "`$key` = :$key";
-                $values_to_bind[$key] = htmlspecialchars(strip_tags($value));
-            }
-        }
-
-        if (empty($set_clauses)) {
-            return false;
-        }
-
-        $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $set_clauses) . ' WHERE id = :id';
-
-        $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(":id", $id);
-
-        foreach ($values_to_bind as $key => &$value) {
-            $stmt->bindParam(":$key", $value);
-        }
-
-        if ($stmt->execute()) {
-            return $stmt->rowCount() > 0;
-        }
-
-        error_log("DB Update Error: " . implode(", ", $stmt->errorInfo()));
-        return false;
-    }
-
-    public function delete()
-    {
-        $query = 'UPDATE ' . $this->table . ' SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id';
-        $stmt = $this->conn->prepare($query);
-
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(':id', $this->id);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
-    }
-}
+?>

@@ -1,189 +1,122 @@
 <?php
+    include_once '../config/Database.php';
+    include_once '../models/Enrollment.php';
 
-require_once __DIR__ . '/../models/Enrollment.php';
-
-class EnrollmentController
-{
-    private $db;
-    private $enrollment;
-
-    public function __construct($db)
+    class EnrollmentController
     {
-        $this->db = $db;
-        $this->enrollment = new Enrollment($this->db);
-    }
+        private $db;
+        private $enrollment;
 
-    public function getEnrollments()
-    {
-        if (isset($_GET['student_id']) && isset($_GET['course_id'])) {
-            $this->getRecordsByStudentAndCourse($_GET['student_id'], $_GET['course_id']);
-        } else {
-            $this->getAllRecords();
-        }
-    }
-    
-    public function getEnrollmentsByCourse($course_id)
-    {
-        $stmt = $this->enrollment->getByCourseIdWithCourseName($course_id);
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if ($enrollments) {
-            $this->successResponse($enrollments);
-        } else {
-            $this->errorResponse("No enrollments found for this course.");
-        }
-    }
-
-    public function getEnrollmentsByStatus($status)
-    {
-        $include = isset($_GET['include']) ? $_GET['include'] : '';
-
-        if ($include === 'student') {
-            $stmt = $this->enrollment->getStudentsByEnrollmentStatus($status);
-        } else {
-            $stmt = $this->enrollment->getByStatus($status);
+        public function __construct()
+        {
+            $database = new Database();
+            $this->db = $database->connect();
+            $this->enrollment = new Enrollment($this->db);
         }
 
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if ($enrollments) {
-            $this->successResponse($enrollments);
-        } else {
-            $this->errorResponse("No enrollments found with that status.");
-        }
-    }
+        public function getEnrollments()
+        {
+            $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : null;
+            $student_number = isset($_GET['student_number']) ? $_GET['student_number'] : null;
+            $status = isset($_GET['status']) ? $_GET['status'] : null;
 
-    public function getApprovedEnrollmentsForStudent($student_id)
-    {
-        $stmt = $this->enrollment->getApprovedByStudent($student_id);
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($student_number && $status) {
+                $stmt = $this->enrollment->getByStudentAndStatus($student_number, $status);
+            } elseif ($student_id) {
+                $stmt = $this->enrollment->getByStudentId($student_id);
+            } else {
+                $stmt = $this->enrollment->read();
+            }
+            
+            $num = $stmt->rowCount();
 
-        if ($enrollments) {
-            $this->successResponse($enrollments);
-        } else {
-            $this->errorResponse("No approved enrollments found for this student.");
-        }
-    }
-
-    private function getAllRecords()
-    {
-        $stmt = $this->enrollment->read();
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->successResponse($enrollments);
-    }
-
-    private function getEnrollmentData($id)
-    {
-        $this->enrollment->id = $id;
-        if ($this->enrollment->read_single()) {
-            return [
-                'id' => (int)$this->enrollment->id,
-                'student_id' => (string)$this->enrollment->student_id,
-                'course_id' => (int)$this->enrollment->course_id,
-                'enrollment_date' => $this->enrollment->enrollment_date,
-                'grade' => $this->enrollment->grade,
-                'status' => $this->enrollment->status
-            ];
-        }
-        return null;
-    }
-
-    public function getRecordById($id)
-    {
-        $record = $this->getEnrollmentData($id);
-        if ($record) {
-            $this->successResponse($record);
-        } else {
-            $this->errorResponse("Enrollment not found.");
-        }
-    }
-
-    public function getEnrollmentsByStudent($student_id)
-    {
-        $stmt = $this->enrollment->getByStudentId($student_id);
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if ($enrollments) {
-            $this->successResponse($enrollments);
-        } else {
-            $this->errorResponse("No enrollments found for this student.");
-        }
-    }
-
-    private function getRecordsByStudentAndCourse($student_id, $course_id)
-    {
-        $stmt = $this->enrollment->read_by_student_and_course($student_id, $course_id);
-        $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if ($enrollments) {
-            $this->successResponse($enrollments);
-        } else {
-            $this->errorResponse("No enrollments found for this student and course.");
-        }
-    }
-
-    public function createRecord()
-    {
-        $data = json_decode(file_get_contents("php://input"));
-
-        if (!isset($data->student_id) || !isset($data->course_id)) {
-            $this->errorResponse("Missing student_id or course_id in request body");
-            return;
+            if ($num > 0) {
+                $enrollments_arr = array();
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    extract($row);
+                    $enrollment_item = array(
+                        'id' => $id,
+                        'student_id' => $student_id,
+                        'course_id' => $course_id,
+                        'course_name' => $course_name,
+                        'enrollment_date' => $enrollment_date,
+                        'grade' => $grade,
+                        'status' => $status
+                    );
+                    array_push($enrollments_arr, $enrollment_item);
+                }
+                echo json_encode($enrollments_arr);
+            } else {
+                echo json_encode(array('message' => 'No enrollments found.'));
+            }
         }
 
-        $result = $this->enrollment->create($data);
+        public function getEnrollment($id)
+        {
+            $this->enrollment->id = $id;
+            $found = $this->enrollment->read_single();
 
-        if ($result === 'exists') {
-            $this->errorResponse("This student is already enrolled in this course.", 409);
-        } else if (is_numeric($result)) {
-            $record = $this->getEnrollmentData($result);
-            $this->successResponse([
-                'message' => 'Enrollment created successfully.',
-                'data' => $record
-            ], 201);
-        } else {
-            $this->errorResponse("Failed to create enrollment.");
-        }
-    }
-
-    public function deleteRecord($id)
-    {
-        $this->enrollment->id = $id;
-        if ($this->enrollment->delete()) {
-            $this->successResponse(["message" => "Enrollment deleted successfully."]);
-        } else {
-            $this->errorResponse("Failed to delete enrollment.");
-        }
-    }
-
-    public function updateRecord($id)
-    {
-        $data = json_decode(file_get_contents("php://input"));
-
-        if (empty(get_object_vars($data))) {
-            $this->errorResponse("No data provided for update.");
-            return;
+            if ($found) {
+                $enrollment_item = array(
+                    'id' => $this->enrollment->id,
+                    'student_id' => $this->enrollment->student_id,
+                    'course_id' => $this->enrollment->course_id,
+                    'enrollment_date' => $this->enrollment->enrollment_date,
+                    'grade' => $this->enrollment->grade,
+                    'status' => $this->enrollment->status
+                );
+                echo json_encode($enrollment_item);
+            } else {
+                http_response_code(404);
+                echo json_encode(array('message' => 'Enrollment not found.'));
+            }
         }
 
-        if ($this->enrollment->update($id, $data)) {
-            $record = $this->getEnrollmentData($id);
-            $this->successResponse([
-                'message' => 'Enrollment updated successfully.',
-                'data' => $record
-            ]);
-        } else {
-            $this->errorResponse("Failed to update enrollment.");
+        public function createEnrollment()
+        {
+            $data = json_decode(file_get_contents("php://input"));
+
+            $this->enrollment->student_id = $data->student_id;
+            $this->enrollment->course_id = $data->course_id;
+            $this->enrollment->status = 'pending';
+
+            if ($this->enrollment->create()) {
+                echo json_encode(array('id' => $this->enrollment->id, 'message' => 'Enrollment created.'));
+            } else {
+                http_response_code(500);
+                echo json_encode(array('message' => 'Enrollment not created.'));
+            }
+        }
+
+        public function updateEnrollment($id)
+        {
+            $data = json_decode(file_get_contents("php://input"));
+
+            $this->enrollment->id = $id;
+            $this->enrollment->student_id = $data->student_id;
+            $this->enrollment->course_id = $data->course_id;
+            $this->enrollment->enrollment_date = $data->enrollment_date;
+            $this->enrollment->grade = $data->grade;
+            $this->enrollment->status = $data->status;
+
+            if ($this->enrollment->update()) {
+                echo json_encode(array('message' => 'Enrollment updated.'));
+            } else {
+                http_response_code(500);
+                echo json_encode(array('message' => 'Enrollment not updated.'));
+            }
+        }
+
+        public function deleteEnrollment($id)
+        {
+            $this->enrollment->id = $id;
+
+            if ($this->enrollment->delete()) {
+                echo json_encode(array('message' => 'Enrollment deleted.'));
+            } else {
+                http_response_code(500);
+                echo json_encode(array('message' => 'Enrollment not deleted.'));
+            }
         }
     }
-
-    private function successResponse($data, $statusCode = 200)
-    {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode($data);
-    }
-
-    private function errorResponse($message, $statusCode = 400)
-    {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode(['message' => $message]);
-    }
-}
+?>
