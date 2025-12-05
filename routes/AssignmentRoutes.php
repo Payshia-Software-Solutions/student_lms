@@ -2,13 +2,17 @@
 
 require_once __DIR__ . '/../controllers/AssignmentController.php';
 
-$ftp_config = require __DIR__ . '/../config/ftp.php';
 $pdo = $GLOBALS['pdo'];
+$ftp_config = $GLOBALS['ftp_config'];
 $assignmentController = new AssignmentController($pdo, $ftp_config);
 
 return [
     'GET /assignments/' => [
         'handler' => [$assignmentController, 'getAllRecords'],
+        'auth' => 'user'
+    ],
+    'GET /assignments/full/submissions/' => [
+        'handler' => [$assignmentController, 'getAssignmentsWithSubmissions'],
         'auth' => 'user'
     ],
     'GET /assignments/{id}/' => [
@@ -19,13 +23,13 @@ return [
     ],
     'POST /assignments/' => [
         'handler' => [$assignmentController, 'createRecord'],
-        'auth' => 'user'
+        'auth' => 'admin'
     ],
-    'PUT /assignments/{id}/' => [
+    'POST /assignments/{id}/' => [
         'handler' => function ($id) use ($assignmentController) {
             $assignmentController->updateRecord($id);
         },
-        'auth' => 'user'
+        'auth' => 'admin'
     ],
     'DELETE /assignments/{id}/' => [
         'handler' => function ($id) use ($assignmentController) {

@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/Assignment.php';
+require_once __DIR__ . '/../models/AssignmentSubmission.php';
 
 class AssignmentController
 {
     private $assignment;
+    private $assignmentSubmission;
     private $ftp_config;
 
     public function __construct($pdo, $ftp_config)
     {
         $this->assignment = new Assignment($pdo);
+        $this->assignmentSubmission = new AssignmentSubmission($pdo);
         $this->ftp_config = $ftp_config;
     }
 
@@ -32,6 +35,34 @@ class AssignmentController
             http_response_code(404);
             echo json_encode(['status' => 'error', 'message' => 'Assignment not found']);
         }
+    }
+
+    public function getAssignmentsWithSubmissions()
+    {
+        $course_id = filter_input(INPUT_GET, 'course_id', FILTER_SANITIZE_NUMBER_INT);
+        $course_bucket_id = filter_input(INPUT_GET, 'course_bucket_id', FILTER_SANITIZE_NUMBER_INT);
+        $student_number = filter_input(INPUT_GET, 'student_number', FILTER_SANITIZE_STRING);
+
+        if (!$course_id || !$course_bucket_id || !$student_number) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Missing required parameters: course_id, course_bucket_id, student_number']);
+            return;
+        }
+
+        $assignments = $this->assignment->getByCourseAndBucket($course_id, $course_bucket_id);
+
+        if (!empty($assignments)) {
+            foreach ($assignments as &$assignment) {
+                $filters = [
+                    'assigment_id' => $assignment['id'],
+                    'student_number' => $student_number
+                ];
+                $submissions = $this->assignmentSubmission->getByFilters($filters);
+                $assignment['submissions'] = !empty($submissions) ? $submissions : [];
+            }
+        }
+
+        echo json_encode(['status' => 'success', 'data' => $assignments]);
     }
 
     public function createRecord()
