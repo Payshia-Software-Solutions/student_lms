@@ -3,7 +3,9 @@
 require_once __DIR__ . '/../models/UserFullDetails.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/StudentCourse.php';
-require_once __DIR__ . '/../controllers/CourseController.php';
+require_once __DIR__ . '/../models/Course.php';
+require_once __DIR__ . '/../models/CourseBucket.php';
+require_once __DIR__ . '/../models/CourseBucketContent.php';
 
 class UserFullDetailsController
 {
@@ -11,7 +13,9 @@ class UserFullDetailsController
     private $userFullDetails;
     private $user;
     private $studentCourse;
-    private $courseController;
+    private $course;
+    private $courseBucket;
+    private $courseBucketContent;
 
     public function __construct($pdo)
     {
@@ -19,7 +23,9 @@ class UserFullDetailsController
         $this->userFullDetails = new UserFullDetails($this->pdo);
         $this->user = new User($this->pdo);
         $this->studentCourse = new StudentCourse($this->pdo);
-        $this->courseController = new CourseController($this->pdo);
+        $this->course = new Course($this->pdo);
+        $this->courseBucket = new CourseBucket($this->pdo);
+        $this->courseBucketContent = new CourseBucketContent($this->pdo);
     }
 
     public function getAllRecords()
@@ -71,17 +77,34 @@ class UserFullDetailsController
         if (isset($_GET['student_number'])) {
             $student_number = $_GET['student_number'];
             $user = $this->user->getByStudentNumber($student_number);
-            $studentCourses = $this->studentCourse->getByStudentNumber($student_number);
 
             if ($user) {
-                $courses = [];
-                foreach ($studentCourses as $studentCourse) {
-                    // This is not ideal, but we have to work with the tools we have
-                    $_GET['id'] = $studentCourse['course_id'];
-                    $courseDetails = $this->courseController->getCourseWithDetails();
-                    $courses[] = json_decode($courseDetails, true)['data'];
+                $studentCourses = $this->studentCourse->getByStudentNumber($student_number);
+                $coursesWithDetails = [];
+
+                if (!empty($studentCourses)) {
+                    foreach ($studentCourses as $studentCourse) {
+                        $course_id = $studentCourse['course_id'];
+                        $course = $this->course->getById($course_id);
+
+                        if ($course) {
+                            $courseBuckets = $this->courseBucket->getByFilters(['course_id' => $course_id]);
+                            $buckets_with_content = [];
+
+                            if (!empty($courseBuckets)) {
+                                foreach ($courseBuckets as $bucket) {
+                                    $bucketContents = $this->courseBucketContent->getByFilters(['course_bucket_id' => $bucket['id']]);
+                                    $bucket['content'] = !empty($bucketContents) ? $bucketContents : [];
+                                    $buckets_with_content[] = $bucket;
+                                }
+                            }
+                            $course['buckets'] = $buckets_with_content;
+                            $coursesWithDetails[] = $course;
+                        }
+                    }
                 }
-                $user['courses'] = $courses;
+
+                $user['courses'] = $coursesWithDetails;
                 $this->successResponse(['found' => true, 'data' => $user]);
             } else {
                 $this->successResponse(['found' => false, 'data' => null]);
