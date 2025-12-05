@@ -6,6 +6,8 @@ require_once __DIR__ . '/../models/StudentCourse.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/CourseBucket.php';
 require_once __DIR__ . '/../models/CourseBucketContent.php';
+require_once __DIR__ . '/../models/Assignment.php';
+require_once __DIR__ . '/../models/AssignmentSubmission.php';
 
 class UserFullDetailsController
 {
@@ -16,6 +18,8 @@ class UserFullDetailsController
     private $course;
     private $courseBucket;
     private $courseBucketContent;
+    private $assignment;
+    private $assignmentSubmission;
 
     public function __construct($pdo)
     {
@@ -26,6 +30,8 @@ class UserFullDetailsController
         $this->course = new Course($this->pdo);
         $this->courseBucket = new CourseBucket($this->pdo);
         $this->courseBucketContent = new CourseBucketContent($this->pdo);
+        $this->assignment = new Assignment($this->pdo);
+        $this->assignmentSubmission = new AssignmentSubmission($this->pdo);
     }
 
     public function getAllRecords()
@@ -89,16 +95,31 @@ class UserFullDetailsController
 
                         if ($course) {
                             $courseBuckets = $this->courseBucket->getByFilters(['course_id' => $course_id]);
-                            $buckets_with_content = [];
-
+                            
                             if (!empty($courseBuckets)) {
-                                foreach ($courseBuckets as $bucket) {
+                                foreach ($courseBuckets as &$bucket) {
+                                    // Fetch Bucket Content
                                     $bucketContents = $this->courseBucketContent->getByFilters(['course_bucket_id' => $bucket['id']]);
                                     $bucket['content'] = !empty($bucketContents) ? $bucketContents : [];
-                                    $buckets_with_content[] = $bucket;
+
+                                    // Fetch Assignments for the bucket
+                                    $assignments = $this->assignment->getByCourseAndBucket($course_id, $bucket['id']);
+                                    
+                                    if (!empty($assignments)) {
+                                        foreach ($assignments as &$assignment) {
+                                            // Fetch Submissions for each assignment by the student
+                                            $submissionFilters = [
+                                                'assigment_id' => $assignment['id'],
+                                                'student_number' => $student_number
+                                            ];
+                                            $submissions = $this->assignmentSubmission->getByFilters($submissionFilters);
+                                            $assignment['submissions'] = !empty($submissions) ? $submissions : [];
+                                        }
+                                    }
+                                    $bucket['assignments'] = !empty($assignments) ? $assignments : [];
                                 }
                             }
-                            $course['buckets'] = $buckets_with_content;
+                            $course['buckets'] = !empty($courseBuckets) ? $courseBuckets : [];
                             $coursesWithDetails[] = $course;
                         }
                     }
