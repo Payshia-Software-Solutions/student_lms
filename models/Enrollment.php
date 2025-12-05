@@ -19,6 +19,28 @@
             $this->conn = $db;
         }
 
+        public static function createTable($pdo)
+        {
+            try {
+                $sql = "
+                    CREATE TABLE IF NOT EXISTS enrollments (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        student_id VARCHAR(255) NOT NULL,
+                        course_id INT NOT NULL,
+                        enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        grade VARCHAR(10) NULL,
+                        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        deleted_at TIMESTAMP NULL
+                    )
+                ";
+                $pdo->exec($sql);
+            } catch (PDOException $e) {
+                error_log("Error creating enrollments table: " . $e->getMessage());
+            }
+        }
+
         public function read()
         {
             $query = 'SELECT e.*, c.course_name, u.name as student_name FROM ' . $this->table . ' e JOIN courses c ON e.course_id = c.id JOIN users u ON e.student_id = u.student_id WHERE e.deleted_at IS NULL';
