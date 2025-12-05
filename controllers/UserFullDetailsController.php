@@ -108,7 +108,7 @@
                                 }
                                 
                                 $assignments = $this->assignment->getByCourseId($course_id);
-                                $courseDetails['assignments'] = $assignments->fetchAll(PDO::FETCH_ASSOC);
+                                $courseDetails['assignments'] = $assignments;
 
                                 $coursesWithDetails[] = $courseDetails;
                             }
