@@ -38,7 +38,6 @@
                         'id' => $id,
                         'student_id' => $student_id,
                         'course_id' => $course_id,
-                        'course_name' => $course_name,
                         'enrollment_date' => $enrollment_date,
                         'grade' => $grade,
                         'status' => $status
