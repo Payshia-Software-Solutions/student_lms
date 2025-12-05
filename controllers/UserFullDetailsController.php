@@ -1,7 +1,6 @@
 <?php
     include_once __DIR__ . '/../config/Database.php';
     include_once __DIR__ . '/../models/User.php';
-    include_once __DIR__ . '/../models/StudentCourse.php';
     include_once __DIR__ . '/../models/Course.php';
     include_once __DIR__ . '/../models/CourseBucket.php';
     include_once __DIR__ . '/../models/CourseBucketContent.php';
@@ -12,19 +11,16 @@
     {
         private $db;
         private $user;
-        private $studentCourse;
         private $course;
         private $courseBucket;
         private $courseBucketContent;
         private $assignment;
         private $enrollment;
 
-        public function __construct()
+        public function __construct($pdo)
         {
-            $database = new Database();
-            $this->db = $database->connect();
+            $this->db = $pdo;
             $this->user = new User($this->db);
-            $this->studentCourse = new StudentCourse($this->db);
             $this->course = new Course($this->db);
             $this->courseBucket = new CourseBucket($this->db);
             $this->courseBucketContent = new CourseBucketContent($this->db);
@@ -32,6 +28,51 @@
             $this->enrollment = new Enrollment($this->db);
         }
 
+        // Get all user records
+        public function getAllRecords()
+        {
+            $stmt = $this->user->read();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['status' => 'success', 'data' => $users]);
+        }
+
+        // Get a single user by ID
+        public function getRecordById($id)
+        {
+            $this->user->id = $id;
+            if ($this->user->read_single()) {
+                $user_data = [
+                    'id' => $this->user->id,
+                    'username' => $this->user->username,
+                    'email' => $this->user->email,
+                    'student_number' => $this->user->student_number
+                ];
+                echo json_encode(['status' => 'success', 'data' => $user_data]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+            }
+        }
+
+        // Get user by student number from query param
+        public function getRecordByStudentNumberQuery()
+        {
+            if (isset($_GET['student_number'])) {
+                $student_number = $_GET['student_number'];
+                $user_data = $this->user->getByStudentNumber($student_number);
+                if ($user_data) {
+                    echo json_encode(['status' => 'success', 'data' => $user_data]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+                }
+            } else {
+                 http_response_code(400);
+                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+            }
+        }
+
+        // The corrected function we worked on
         public function getUserWithCourseDetails()
         {
             if (isset($_GET['student_number'])) {
@@ -42,9 +83,7 @@
                     $enrollments = $this->enrollment->getByStudentAndStatus($student_number, 'approved');
                     $coursesWithDetails = [];
                     
-                    $enrollment_num = $enrollments->rowCount();
-
-                    if ($enrollment_num > 0) {
+                    if ($enrollments->rowCount() > 0) {
                         while ($enrollment_row = $enrollments->fetch(PDO::FETCH_ASSOC)) {
                             $course_id = $enrollment_row['course_id'];
                             $course_data = $this->course->getById($course_id);
@@ -56,7 +95,8 @@
                                     'course_description' => $course_data['description'],
                                     'course_image' => $course_data['img_url'],
                                     'created_at' => $course_data['created_at'],
-                                    'buckets' => []
+                                    'buckets' => [],
+                                    'assignments' => []
                                 ];
 
                                 $buckets = $this->courseBucket->getByCourseId($course_id);
@@ -84,6 +124,48 @@
             } else {
                 http_response_code(400);
                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+            }
+        }
+
+        // Create a new user record
+        public function createRecord()
+        {
+            $data = json_decode(file_get_contents("php://input"));
+            // Basic validation
+            if (empty($data->username) || empty($data->email) || empty($data->password)) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Missing required fields.']);
+                return;
+            }
+
+            if ($this->user->create($data)) {
+                echo json_encode(['status' => 'success', 'message' => 'User created.']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'User could not be created.']);
+            }
+        }
+
+        // Update a user record
+        public function updateRecord($id)
+        {
+            $data = json_decode(file_get_contents("php://input"));
+            if ($this->user->update($id, $data)) {
+                echo json_encode(['status' => 'success', 'message' => 'User updated.']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'User could not be updated.']);
+            }
+        }
+
+        // Delete a user record
+        public function deleteRecord($id)
+        {
+            if ($this->user->delete($id)) {
+                 echo json_encode(['status' => 'success', 'message' => 'User deleted.']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'User could not be deleted.']);
             }
         }
     }
