@@ -13,6 +13,8 @@ class StudentPaymentCourse
     public $payment_amount;
     public $discount_amount;
     public $created_at;
+    public $course_name;
+    public $course_bucket_name;
 
     // Constructor
     public function __construct($db)
@@ -68,16 +70,71 @@ class StudentPaymentCourse
     // Get all records
     public function getAll()
     {
-        $query = "SELECT * FROM student_payment_course";
+        $query = "SELECT
+                    spc.*,
+                    c.course_name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    student_payment_course spc
+                LEFT JOIN
+                    courses c ON spc.course_id = c.id
+                LEFT JOIN
+                    course_bucket cb ON spc.course_bucket_id = cb.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
+        return $stmt;
+    }
+
+    // Get records by filters
+    public function getByFilters($filters)
+    {
+        $query = "SELECT
+                    spc.*,
+                    c.course_name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    student_payment_course spc
+                LEFT JOIN
+                    courses c ON spc.course_id = c.id
+                LEFT JOIN
+                    course_bucket cb ON spc.course_bucket_id = cb.id
+                WHERE 1=1";
+        $params = [];
+
+        if (isset($filters['course_id'])) {
+            $query .= " AND spc.course_id = :course_id";
+            $params[':course_id'] = $filters['course_id'];
+        }
+
+        if (isset($filters['course_bucket_id'])) {
+            $query .= " AND spc.course_bucket_id = :course_bucket_id";
+            $params[':course_bucket_id'] = $filters['course_bucket_id'];
+        }
+
+        if (isset($filters['student_number'])) {
+            $query .= " AND spc.student_number = :student_number";
+            $params[':student_number'] = $filters['student_number'];
+        }
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute($params);
         return $stmt;
     }
 
     // Get a single record by ID
     public function getById($id)
     {
-        $query = "SELECT * FROM student_payment_course WHERE id = ?";
+        $query = "SELECT
+                    spc.*,
+                    c.course_name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    student_payment_course spc
+                LEFT JOIN
+                    courses c ON spc.course_id = c.id
+                LEFT JOIN
+                    course_bucket cb ON spc.course_bucket_id = cb.id
+                WHERE spc.id = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -93,6 +150,8 @@ class StudentPaymentCourse
             $this->payment_amount = $row['payment_amount'];
             $this->discount_amount = $row['discount_amount'];
             $this->created_at = $row['created_at'];
+            $this->course_name = $row['course_name'];
+            $this->course_bucket_name = $row['course_bucket_name'];
             return true;
         }
         return false;
