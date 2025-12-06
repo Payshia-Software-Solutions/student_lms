@@ -128,6 +128,11 @@ class PaymentRequest
             $params[':student_number'] = $filters['student_number'];
         }
 
+        if (isset($filters['request_status'])) {
+            $query .= " AND pr.request_status = :request_status";
+            $params[':request_status'] = $filters['request_status'];
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute($params);
         return $stmt;

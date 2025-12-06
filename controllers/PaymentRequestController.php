@@ -22,15 +22,21 @@ class PaymentRequestController
 
     public function getRecordsByFilter()
     {
+        if (!isset($_GET['course_id']) || !isset($_GET['course_bucket_id'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'course_id and course_bucket_id are required.']);
+            return;
+        }
+
         $filters = [];
-        if (isset($_GET['course_id'])) {
-            $filters['course_id'] = $_GET['course_id'];
-        }
-        if (isset($_GET['course_bucket_id'])) {
-            $filters['course_bucket_id'] = $_GET['course_bucket_id'];
-        }
+        $filters['course_id'] = $_GET['course_id'];
+        $filters['course_bucket_id'] = $_GET['course_bucket_id'];
+
         if (isset($_GET['student_number'])) {
             $filters['student_number'] = $_GET['student_number'];
+        }
+        if (isset($_GET['request_status'])) {
+            $filters['request_status'] = $_GET['request_status'];
         }
 
         $stmt = $this->paymentRequest->getByFilters($filters);
