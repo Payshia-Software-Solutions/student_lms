@@ -167,12 +167,15 @@
             // Separate data for each model
             $userData = [];
             $userFullDetailsData = [];
+            
+            $userFields = ['f_name', 'l_name', 'email', 'nic', 'phone_number', 'user_status', 'company_id', 'is_active', 'password'];
+            $userDetailsFields = ['civil_status', 'gender', 'address_line_1', 'address_line_2', 'city_id', 'telephone_1', 'telephone_2', 'nic', 'e_mail', 'birth_day', 'updated_by', 'full_name', 'name_with_initials', 'name_on_certificate'];
 
             foreach ($data as $key => $value) {
-                if (in_array($key, ['name', 'student_number', 'role', 'status', 'campus_id', 'batch_id'])) {
+                if (in_array($key, $userFields)) {
                     $userData[$key] = $value;
                 }
-                if (in_array($key, ['civil_status', 'gender', 'address_line_1', 'address_line_2', 'city_id', 'telephone_1', 'telephone_2', 'nic', 'e_mail', 'birth_day', 'updated_by', 'full_name', 'name_with_initials', 'name_on_certificate'])) {
+                if (in_array($key, $userDetailsFields)) {
                     $userFullDetailsData[$key] = $value;
                 }
             }
