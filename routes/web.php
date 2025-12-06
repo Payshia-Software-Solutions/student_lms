@@ -10,6 +10,7 @@ require_once __DIR__ . '/../models/Enrollment.php';
 require_once __DIR__ . '/../models/OrderableItem.php';
 require_once __DIR__ . '/../models/StudentOrder.php';
 require_once __DIR__ . '/../models/UserFullDetails.php';
+require_once __DIR__ . '/../models/StudentPaymentCourse.php';
 
 // Instantiate DB & connect
 $database = new Database();
@@ -87,6 +88,7 @@ Enrollment::createTable($GLOBALS['pdo']);
 OrderableItem::createTable($GLOBALS['pdo']);
 StudentOrder::createTable($GLOBALS['pdo']);
 UserFullDetails::createTable($GLOBALS['pdo']);
+StudentPaymentCourse::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
