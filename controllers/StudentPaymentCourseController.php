@@ -1,14 +1,19 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentPaymentCourse.php';
+require_once __DIR__ . '/../models/PaymentRequest.php';
 
 class StudentPaymentCourseController
 {
     private $studentPaymentCourse;
+    private $paymentRequest;
+    private $pdo;
 
     public function __construct($pdo)
     {
-        $this->studentPaymentCourse = new StudentPaymentCourse($pdo);
+        $this->pdo = $pdo;
+        $this->studentPaymentCourse = new StudentPaymentCourse($this->pdo);
+        $this->paymentRequest = new PaymentRequest($this->pdo);
     }
 
     public function getAllRecords()
@@ -42,7 +47,13 @@ class StudentPaymentCourseController
     {
         $data = json_decode(file_get_contents('php://input'), true);
         $newId = $this->studentPaymentCourse->create($data);
+
         if ($newId) {
+            // If a payment_request_id is provided, update its status to 'approved'
+            if (!empty($data['payment_request_id'])) {
+                $this->paymentRequest->update($data['payment_request_id'], ['request_status' => 'approved']);
+            }
+
             if ($this->studentPaymentCourse->getById($newId)) {
                 $record_item = [
                     'id' => $this->studentPaymentCourse->id,

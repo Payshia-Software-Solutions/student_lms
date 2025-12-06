@@ -173,29 +173,31 @@ class PaymentRequest
         return false;
     }
 
-    // Update a record
+    // Update a record dynamically
     public function update($id, $data)
     {
-        $query = "UPDATE payment_request SET student_number = :student_number, slip_url = :slip_url, payment_amount = :payment_amount, hash = :hash, bank = :bank, branch = :branch, ref = :ref, request_status = :request_status, course_id = :course_id, course_bucket_id = :course_bucket_id WHERE id = :id";
+        $fields = [];
+        $params = [':id' => $id];
+        $allowed_fields = [
+            'student_number', 'slip_url', 'payment_amount', 'hash', 'bank',
+            'branch', 'ref', 'request_status', 'course_id', 'course_bucket_id'
+        ];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowed_fields)) {
+                $fields[] = "`$key` = :$key";
+                $params[":$key"] = $value;
+            }
+        }
+
+        if (empty($fields)) {
+            return false; // No valid fields to update
+        }
+
+        $query = "UPDATE payment_request SET " . implode(', ', $fields) . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize and bind parameters
-        $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':student_number', $data['student_number']);
-        $stmt->bindParam(':slip_url', $data['slip_url']);
-        $stmt->bindParam(':payment_amount', $data['payment_amount']);
-        $stmt->bindParam(':hash', $data['hash']);
-        $stmt->bindParam(':bank', $data['bank']);
-        $stmt->bindParam(':branch', $data['branch']);
-        $stmt->bindParam(':ref', $data['ref']);
-        $stmt->bindParam(':request_status', $data['request_status']);
-        $stmt->bindParam(':course_id', $data['course_id']);
-        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute($params);
     }
 
     // Delete a record
