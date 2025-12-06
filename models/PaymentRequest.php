@@ -44,7 +44,7 @@ class PaymentRequest
             course_bucket_id INT NOT NULL,
             FOREIGN KEY (student_number) REFERENCES users(student_number),
             FOREIGN KEY (course_id) REFERENCES courses(id),
-            FOREIGN KEY (course_bucket_id) REFERENCES course_buckets(id)
+            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id)
         )";
 
         try {
@@ -91,7 +91,7 @@ class PaymentRequest
                 LEFT JOIN
                     courses c ON pr.course_id = c.id
                 LEFT JOIN
-                    course_buckets cb ON pr.course_bucket_id = cb.id";
+                    course_bucket cb ON pr.course_bucket_id = cb.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -109,7 +109,7 @@ class PaymentRequest
                 LEFT JOIN
                     courses c ON pr.course_id = c.id
                 LEFT JOIN
-                    course_buckets cb ON pr.course_bucket_id = cb.id
+                    course_bucket cb ON pr.course_bucket_id = cb.id
                 WHERE 1=1";
         $params = [];
 
@@ -145,7 +145,7 @@ class PaymentRequest
                 LEFT JOIN
                     courses c ON pr.course_id = c.id
                 LEFT JOIN
-                    course_buckets cb ON pr.course_bucket_id = cb.id
+                    course_bucket cb ON pr.course_bucket_id = cb.id
                 WHERE pr.id = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
