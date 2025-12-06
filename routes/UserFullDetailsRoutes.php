@@ -34,6 +34,12 @@ return [
         },
         'auth' => 'admin'
     ],
+    'PUT /users/full-details/{student_number}/' => [
+        'handler' => function ($student_number) use ($userFullDetailsController) {
+            $userFullDetailsController->updateUserAndDetails($student_number);
+        },
+        'auth' => 'admin'
+    ],
     'DELETE /user-full-details/{id}/' => [
         'handler' => function ($id) use ($userFullDetailsController) {
             $userFullDetailsController->deleteRecord($id);

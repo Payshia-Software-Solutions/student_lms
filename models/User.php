@@ -100,6 +100,38 @@ class User
         return $stmt->execute($fields);
     }
 
+    public function updateByStudentNumber($studentNumber, $data)
+    {
+        $fields = [];
+        if (isset($data['f_name'])) $fields['f_name'] = $data['f_name'];
+        if (isset($data['l_name'])) $fields['l_name'] = $data['l_name'];
+        if (isset($data['email'])) $fields['email'] = $data['email'];
+        if (isset($data['nic'])) $fields['nic'] = $data['nic'];
+        if (isset($data['phone_number'])) $fields['phone_number'] = $data['phone_number'];
+        if (isset($data['user_status'])) $fields['user_status'] = $data['user_status'];
+        if (isset($data['company_id'])) $fields['company_id'] = $data['company_id'];
+        if (isset($data['is_active'])) $fields['is_active'] = $data['is_active'];
+        if (isset($data['password'])) $fields['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+
+        if (empty($fields)) {
+            return true; // Nothing to update
+        }
+
+        $fields['student_number'] = $studentNumber;
+
+        $setClause = "";
+        foreach (array_keys($fields) as $key) {
+            if ($key !== 'student_number') {
+                $setClause .= "`$key` = :$key, ";
+            }
+        }
+        $setClause = rtrim($setClause, ', ');
+
+        $stmt = $this->pdo->prepare("UPDATE users SET $setClause WHERE student_number = :student_number");
+
+        return $stmt->execute($fields);
+    }
+
     public function delete($id)
     {
         // Soft delete

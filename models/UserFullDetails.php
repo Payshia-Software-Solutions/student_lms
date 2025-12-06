@@ -1,4 +1,3 @@
-
 <?php
 
 class UserFullDetails
@@ -31,26 +30,7 @@ class UserFullDetails
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `user_full_details` (
-            `id` int(50) NOT NULL AUTO_INCREMENT,
-            `student_number` varchar(50) DEFAULT NULL,
-            `civil_status` varchar(50) DEFAULT NULL,
-            `gender` varchar(10) DEFAULT NULL,
-            `address_line_1` varchar(255) DEFAULT NULL,
-            `address_line_2` varchar(255) DEFAULT NULL,
-            `city_id` int(11) DEFAULT NULL,
-            `telephone_1` varchar(10) DEFAULT NULL,
-            `telephone_2` varchar(10) DEFAULT NULL,
-            `nic` varchar(50) DEFAULT NULL,
-            `e_mail` varchar(255) DEFAULT NULL,
-            `birth_day` date DEFAULT NULL,
-            `updated_by` varchar(50) DEFAULT NULL,
-            `updated_at` timestamp(6) NOT NULL DEFAULT current_timestamp(6),
-            `full_name` text DEFAULT NULL,
-            `name_with_initials` text DEFAULT NULL,
-            `name_on_certificate` text DEFAULT NULL,
-            PRIMARY KEY (`id`)
-        ) ENGINE=MyISAM AUTO_INCREMENT=5542 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;";
+        $query = "CREATE TABLE IF NOT EXISTS `user_full_details` (\n            `id` int(50) NOT NULL AUTO_INCREMENT,\n            `student_number` varchar(50) DEFAULT NULL,\n            `civil_status` varchar(50) DEFAULT NULL,\n            `gender` varchar(10) DEFAULT NULL,\n            `address_line_1` varchar(255) DEFAULT NULL,\n            `address_line_2` varchar(255) DEFAULT NULL,\n            `city_id` int(11) DEFAULT NULL,\n            `telephone_1` varchar(10) DEFAULT NULL,\n            `telephone_2` varchar(10) DEFAULT NULL,\n            `nic` varchar(50) DEFAULT NULL,\n            `e_mail` varchar(255) DEFAULT NULL,\n            `birth_day` date DEFAULT NULL,\n            `updated_by` varchar(50) DEFAULT NULL,\n            `updated_at` timestamp(6) NOT NULL DEFAULT current_timestamp(6),\n            `full_name` text DEFAULT NULL,\n            `name_with_initials` text DEFAULT NULL,\n            `name_on_certificate` text DEFAULT NULL,\n            PRIMARY KEY (`id`)\n        ) ENGINE=MyISAM AUTO_INCREMENT=5542 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;";
 
         try {
             $stmt = $db->prepare($query);
@@ -131,6 +111,29 @@ class UserFullDetails
         }
 
         $query = "UPDATE " . $this->table . " SET " . implode(', ', $fields) . " WHERE `id` = :id";
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute($params);
+    }
+    
+    public function updateByStudentNumber($studentNumber, $data)
+    {
+        $fields = [];
+        $params = [':student_number' => $studentNumber];
+        $allowed_fields = ['civil_status', 'gender', 'address_line_1', 'address_line_2', 'city_id', 'telephone_1', 'telephone_2', 'nic', 'e_mail', 'birth_day', 'updated_by', 'full_name', 'name_with_initials', 'name_on_certificate'];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowed_fields)) {
+                $fields[] = "`$key` = :$key";
+                $params[":$key"] = htmlspecialchars(strip_tags($value));
+            }
+        }
+
+        if (empty($fields)) {
+            return true; // Nothing to update
+        }
+
+        $query = "UPDATE " . $this->table . " SET " . implode(', ', $fields) . " WHERE `student_number` = :student_number";
         $stmt = $this->conn->prepare($query);
 
         return $stmt->execute($params);
