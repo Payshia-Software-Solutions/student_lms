@@ -113,7 +113,7 @@
                 if ($user_data) {
                     echo json_encode(['status' => 'success', 'data' => $user_data]);
                 } else {
-                    http_response_code(404);
+                    http_response_code(200);
                     echo json_encode(['status' => 'error', 'message' => 'User not found.']);
                 }
             } else {
