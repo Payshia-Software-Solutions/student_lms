@@ -23,6 +23,14 @@ class StudentPaymentCourseController
         echo json_encode(['status' => 'success', 'data' => $records]);
     }
 
+    public function getRecordsByFilters()
+    {
+        $filters = $_GET; // Using GET parameters for filtering
+        $stmt = $this->studentPaymentCourse->getByFilters($filters);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
     public function getRecordById($id)
     {
         if ($this->studentPaymentCourse->getById($id)) {
@@ -35,6 +43,8 @@ class StudentPaymentCourseController
                 'payment_amount' => $this->studentPaymentCourse->payment_amount,
                 'discount_amount' => $this->studentPaymentCourse->discount_amount,
                 'created_at' => $this->studentPaymentCourse->created_at,
+                'course_name' => $this->studentPaymentCourse->course_name,
+                'course_bucket_name' => $this->studentPaymentCourse->course_bucket_name,
             ];
             echo json_encode(['status' => 'success', 'data' => $record_item]);
         } else {
@@ -64,6 +74,8 @@ class StudentPaymentCourseController
                     'payment_amount' => $this->studentPaymentCourse->payment_amount,
                     'discount_amount' => $this->studentPaymentCourse->discount_amount,
                     'created_at' => $this->studentPaymentCourse->created_at,
+                    'course_name' => $this->studentPaymentCourse->course_name,
+                    'course_bucket_name' => $this->studentPaymentCourse->course_bucket_name,
                 ];
                 http_response_code(201);
                 echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record_item]);
@@ -91,6 +103,8 @@ class StudentPaymentCourseController
                     'payment_amount' => $this->studentPaymentCourse->payment_amount,
                     'discount_amount' => $this->studentPaymentCourse->discount_amount,
                     'created_at' => $this->studentPaymentCourse->created_at,
+                    'course_name' => $this->studentPaymentCourse->course_name,
+                    'course_bucket_name' => $this->studentPaymentCourse->course_bucket_name,
                 ];
                 echo json_encode(['status' => 'success', 'message' => 'Record updated successfully', 'data' => $record_item]);
             } else {
