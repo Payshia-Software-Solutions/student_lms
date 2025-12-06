@@ -84,7 +84,7 @@ class PaymentRequest
     {
         $query = "SELECT
                     pr.*,
-                    c.name AS course_name,
+                    c.course_name AS course_name,
                     cb.name AS course_bucket_name
                 FROM
                     payment_request pr
@@ -102,7 +102,7 @@ class PaymentRequest
     {
         $query = "SELECT
                     pr.*,
-                    c.name AS course_name,
+                    c.course_name AS course_name,
                     cb.name AS course_bucket_name
                 FROM
                     payment_request pr
@@ -138,7 +138,7 @@ class PaymentRequest
     {
         $query = "SELECT
                     pr.*,
-                    c.name AS course_name,
+                    c.course_name AS course_name,
                     cb.name AS course_bucket_name
                 FROM
                     payment_request pr
