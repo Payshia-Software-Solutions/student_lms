@@ -17,6 +17,8 @@ class PaymentRequest
     public $created_at;
     public $course_id;
     public $course_bucket_id;
+    public $course_name;
+    public $course_bucket_name;
 
     // Constructor
     public function __construct($db)
@@ -80,7 +82,16 @@ class PaymentRequest
     // Get all records
     public function getAll()
     {
-        $query = "SELECT * FROM payment_request";
+        $query = "SELECT
+                    pr.*,
+                    c.name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    payment_request pr
+                LEFT JOIN
+                    courses c ON pr.course_id = c.id
+                LEFT JOIN
+                    course_buckets cb ON pr.course_bucket_id = cb.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -89,21 +100,31 @@ class PaymentRequest
     // Get records by filters
     public function getByFilters($filters)
     {
-        $query = "SELECT * FROM payment_request WHERE 1=1";
+        $query = "SELECT
+                    pr.*,
+                    c.name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    payment_request pr
+                LEFT JOIN
+                    courses c ON pr.course_id = c.id
+                LEFT JOIN
+                    course_buckets cb ON pr.course_bucket_id = cb.id
+                WHERE 1=1";
         $params = [];
 
         if (isset($filters['course_id'])) {
-            $query .= " AND course_id = :course_id";
+            $query .= " AND pr.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
         }
 
         if (isset($filters['course_bucket_id'])) {
-            $query .= " AND course_bucket_id = :course_bucket_id";
+            $query .= " AND pr.course_bucket_id = :course_bucket_id";
             $params[':course_bucket_id'] = $filters['course_bucket_id'];
         }
 
         if (isset($filters['student_number'])) {
-            $query .= " AND student_number = :student_number";
+            $query .= " AND pr.student_number = :student_number";
             $params[':student_number'] = $filters['student_number'];
         }
 
@@ -115,7 +136,17 @@ class PaymentRequest
     // Get a single record by ID
     public function getById($id)
     {
-        $query = "SELECT * FROM payment_request WHERE id = ?";
+        $query = "SELECT
+                    pr.*,
+                    c.name AS course_name,
+                    cb.name AS course_bucket_name
+                FROM
+                    payment_request pr
+                LEFT JOIN
+                    courses c ON pr.course_id = c.id
+                LEFT JOIN
+                    course_buckets cb ON pr.course_bucket_id = cb.id
+                WHERE pr.id = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -135,6 +166,8 @@ class PaymentRequest
             $this->created_at = $row['created_at'];
             $this->course_id = $row['course_id'];
             $this->course_bucket_id = $row['course_bucket_id'];
+            $this->course_name = $row['course_name'];
+            $this->course_bucket_name = $row['course_bucket_name'];
             return true;
         }
         return false;
