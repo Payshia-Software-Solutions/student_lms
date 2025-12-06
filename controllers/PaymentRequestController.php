@@ -7,17 +7,33 @@ class PaymentRequestController
     private $paymentRequest;
     private $ftp_config;
 
-    // **FIX: Accept FTP config in the constructor**
     public function __construct($pdo, $ftp_config)
     {
         $this->paymentRequest = new PaymentRequest($pdo);
-        // **FIX: Use the FTP config that is passed in**
         $this->ftp_config = $ftp_config;
     }
 
     public function getAllRecords()
     {
         $stmt = $this->paymentRequest->getAll();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
+    public function getRecordsByFilter()
+    {
+        $filters = [];
+        if (isset($_GET['course_id'])) {
+            $filters['course_id'] = $_GET['course_id'];
+        }
+        if (isset($_GET['course_bucket_id'])) {
+            $filters['course_bucket_id'] = $_GET['course_bucket_id'];
+        }
+        if (isset($_GET['student_number'])) {
+            $filters['student_number'] = $_GET['student_number'];
+        }
+
+        $stmt = $this->paymentRequest->getByFilters($filters);
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'data' => $records]);
     }
@@ -36,6 +52,8 @@ class PaymentRequestController
                 'ref' => $this->paymentRequest->ref,
                 'request_status' => $this->paymentRequest->request_status,
                 'created_at' => $this->paymentRequest->created_at,
+                'course_id' => $this->paymentRequest->course_id,
+                'course_bucket_id' => $this->paymentRequest->course_bucket_id,
             ];
             echo json_encode(['status' => 'success', 'data' => $record_item]);
         } else {
@@ -103,11 +121,11 @@ class PaymentRequestController
             return;
         }
 
-        ftp_close($conn_id);
+        ftp_close($conn_.id);
 
         // --- End of FTP Handling ---
 
-        $data = json_decode($_POST['data'], true);
+        $data = $_POST;
         // Construct the public URL using the base URL and the upload directory
         $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
         $data['hash'] = $image_hash;
@@ -127,6 +145,8 @@ class PaymentRequestController
                     'ref' => $this->paymentRequest->ref,
                     'request_status' => $this->paymentRequest->request_status,
                     'created_at' => $this->paymentRequest->created_at,
+                    'course_id' => $this->paymentRequest->course_id,
+                    'course_bucket_id' => $this->paymentRequest->course_bucket_id,
                 ];
                 http_response_code(201);
                 echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record_item]);
@@ -156,6 +176,8 @@ class PaymentRequestController
                     'ref' => $this->paymentRequest->ref,
                     'request_status' => $this->paymentRequest->request_status,
                     'created_at' => $this->paymentRequest->created_at,
+                    'course_id' => $this->paymentRequest->course_id,
+                    'course_bucket_id' => $this->paymentRequest->course_bucket_id,
                 ];
                 echo json_encode(['status' => 'success', 'message' => 'Record updated successfully', 'data' => $record_item]);
             } else {
@@ -164,7 +186,7 @@ class PaymentRequestController
             }
         } else {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Unable to update record']);
+            echo json_.encode(['status' => 'error', 'message' => 'Unable to update record']);
         }
     }
 

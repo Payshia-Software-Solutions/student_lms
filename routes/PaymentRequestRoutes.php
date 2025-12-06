@@ -18,6 +18,14 @@ return [
         'auth' => 'private'
     ],
 
+    // Get records by filter
+    'GET /payment_requests/filter/' => [
+        'handler' => function () use ($paymentRequestController) {
+            $paymentRequestController->getRecordsByFilter();
+        },
+        'auth' => 'private'
+    ],
+
     // Get a record by ID
     'GET /payment_requests/{id}/' => [
         'handler' => function ($id) use ($paymentRequestController) {
