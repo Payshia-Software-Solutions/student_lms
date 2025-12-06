@@ -159,5 +159,45 @@
                 echo json_encode(['status' => 'error', 'message' => 'User details could not be deleted.']);
             }
         }
+        
+        public function updateUserAndDetails($student_number)
+        {
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            // Separate data for each model
+            $userData = [];
+            $userFullDetailsData = [];
+
+            foreach ($data as $key => $value) {
+                if (in_array($key, ['name', 'student_number', 'role', 'status', 'campus_id', 'batch_id'])) {
+                    $userData[$key] = $value;
+                }
+                if (in_array($key, ['civil_status', 'gender', 'address_line_1', 'address_line_2', 'city_id', 'telephone_1', 'telephone_2', 'nic', 'e_mail', 'birth_day', 'updated_by', 'full_name', 'name_with_initials', 'name_on_certificate'])) {
+                    $userFullDetailsData[$key] = $value;
+                }
+            }
+
+            try {
+                $this->db->beginTransaction();
+
+                // Update user
+                if (!empty($userData)) {
+                    $this->user->updateByStudentNumber($student_number, $userData);
+                }
+
+                // Update user full details
+                if (!empty($userFullDetailsData)) {
+                    $this->userFullDetails->updateByStudentNumber($student_number, $userFullDetailsData);
+                }
+
+                $this->db->commit();
+
+                echo json_encode(['status' => 'success', 'message' => 'User and details updated successfully.']);
+            } catch (Exception $e) {
+                $this->db->rollBack();
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Failed to update user and details: ' . $e->getMessage()]);
+            }
+        }
     }
 ?>
