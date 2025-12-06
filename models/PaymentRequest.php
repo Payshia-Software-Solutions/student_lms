@@ -15,6 +15,8 @@ class PaymentRequest
     public $ref;
     public $request_status;
     public $created_at;
+    public $course_id;
+    public $course_bucket_id;
 
     // Constructor
     public function __construct($db)
@@ -36,7 +38,11 @@ class PaymentRequest
             ref VARCHAR(100) NOT NULL,
             request_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (student_number) REFERENCES users(student_number)
+            course_id INT NOT NULL,
+            course_bucket_id INT NOT NULL,
+            FOREIGN KEY (student_number) REFERENCES users(student_number),
+            FOREIGN KEY (course_id) REFERENCES courses(id),
+            FOREIGN KEY (course_bucket_id) REFERENCES course_buckets(id)
         )";
 
         try {
@@ -50,7 +56,7 @@ class PaymentRequest
     // Create a new record
     public function create($data)
     {
-        $query = "INSERT INTO payment_request (student_number, slip_url, payment_amount, hash, bank, branch, ref, request_status) VALUES (:student_number, :slip_url, :payment_amount, :hash, :bank, :branch, :ref, :request_status)";
+        $query = "INSERT INTO payment_request (student_number, slip_url, payment_amount, hash, bank, branch, ref, request_status, course_id, course_bucket_id) VALUES (:student_number, :slip_url, :payment_amount, :hash, :bank, :branch, :ref, :request_status, :course_id, :course_bucket_id)";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
@@ -62,6 +68,8 @@ class PaymentRequest
         $stmt->bindParam(':branch', $data['branch']);
         $stmt->bindParam(':ref', $data['ref']);
         $stmt->bindParam(':request_status', $data['request_status']);
+        $stmt->bindParam(':course_id', $data['course_id']);
+        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
@@ -75,6 +83,32 @@ class PaymentRequest
         $query = "SELECT * FROM payment_request";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
+        return $stmt;
+    }
+
+    // Get records by filters
+    public function getByFilters($filters)
+    {
+        $query = "SELECT * FROM payment_request WHERE 1=1";
+        $params = [];
+
+        if (isset($filters['course_id'])) {
+            $query .= " AND course_id = :course_id";
+            $params[':course_id'] = $filters['course_id'];
+        }
+
+        if (isset($filters['course_bucket_id'])) {
+            $query .= " AND course_bucket_id = :course_bucket_id";
+            $params[':course_bucket_id'] = $filters['course_bucket_id'];
+        }
+
+        if (isset($filters['student_number'])) {
+            $query .= " AND student_number = :student_number";
+            $params[':student_number'] = $filters['student_number'];
+        }
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute($params);
         return $stmt;
     }
 
@@ -99,6 +133,8 @@ class PaymentRequest
             $this->ref = $row['ref'];
             $this->request_status = $row['request_status'];
             $this->created_at = $row['created_at'];
+            $this->course_id = $row['course_id'];
+            $this->course_bucket_id = $row['course_bucket_id'];
             return true;
         }
         return false;
@@ -107,7 +143,7 @@ class PaymentRequest
     // Update a record
     public function update($id, $data)
     {
-        $query = "UPDATE payment_request SET student_number = :student_number, slip_url = :slip_url, payment_amount = :payment_amount, hash = :hash, bank = :bank, branch = :branch, ref = :ref, request_status = :request_status WHERE id = :id";
+        $query = "UPDATE payment_request SET student_number = :student_number, slip_url = :slip_url, payment_amount = :payment_amount, hash = :hash, bank = :bank, branch = :branch, ref = :ref, request_status = :request_status, course_id = :course_id, course_bucket_id = :course_bucket_id WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
@@ -120,6 +156,8 @@ class PaymentRequest
         $stmt->bindParam(':branch', $data['branch']);
         $stmt->bindParam(':ref', $data['ref']);
         $stmt->bindParam(':request_status', $data['request_status']);
+        $stmt->bindParam(':course_id', $data['course_id']);
+        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
 
         if ($stmt->execute()) {
             return true;
