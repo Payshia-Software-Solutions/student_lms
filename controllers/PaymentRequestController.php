@@ -93,7 +93,7 @@ class PaymentRequestController
             echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
             return;
         }
-        
+
         if (ftp_login($conn_id, $ftp_user, $ftp_pass)) {
             ftp_pasv($conn_id, true);
         } else {
@@ -103,21 +103,13 @@ class PaymentRequestController
             return;
         }
 
-        // Define the specific directory for payment slips
         $upload_directory_name = 'payment_slips';
-        $remote_dir = $upload_directory_name;
-
-        if (!@ftp_chdir($conn_id, $remote_dir)) {
-            if (!ftp_mkdir($conn_id, $remote_dir)) {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to create directory on FTP server. Check permissions.']);
-                ftp_close($conn_id);
-                return;
-            }
-        }
+        
+        // Attempt to create the directory. The '@' suppresses errors if it already exists.
+        @ftp_mkdir($conn_id, $upload_directory_name);
 
         $file_name = uniqid() . '-' . basename($file['name']);
-        $remote_path = $remote_dir . '/' . $file_name;
+        $remote_path = $upload_directory_name . '/' . $file_name;
 
         if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
             http_response_code(500);
@@ -131,7 +123,6 @@ class PaymentRequestController
         // --- End of FTP Handling ---
 
         $data = $_POST;
-        // Construct the public URL using the base URL and the upload directory
         $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
         $data['hash'] = $image_hash;
 
@@ -156,7 +147,7 @@ class PaymentRequestController
                 http_response_code(201);
                 echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record_item]);
             } else {
-                 http_response_code(500);
+                http_response_code(500);
                 echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created record.']);
             }
         } else {
