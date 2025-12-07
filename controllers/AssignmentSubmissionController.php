@@ -85,6 +85,17 @@ class AssignmentSubmissionController
             echo json_encode(['status' => 'error', 'message' => 'Associated assignment not found.']);
             return;
         }
+
+        // Determine submission status based on deadline
+        $status = 'submitted';
+        if (isset($assignment['deadline_date'])) {
+            $deadline = new DateTime($assignment['deadline_date']);
+            $now = new DateTime();
+            if ($now > $deadline) {
+                $status = 'late_submit';
+            }
+        }
+        
         $submission_limit = $assignment['submition_count'];
 
         $existingSubmissions = $this->assignmentSubmission->getByFilters([
@@ -120,7 +131,7 @@ class AssignmentSubmissionController
 
         $data['file_path'] = $file_url;
         $data['sub_count'] = $current_submission_count + 1;
-        $data['sub_status'] = 'submitted';
+        $data['sub_status'] = $status;
 
         $newId = $this->assignmentSubmission->create($data);
 
@@ -189,7 +200,7 @@ class AssignmentSubmissionController
             return;
         }
 
-        $allowed_statuses = ['submitted', 'graded', 'rejected'];
+        $allowed_statuses = ['submitted', 'graded', 'rejected', 'late_submit'];
         if (!in_array($status, $allowed_statuses)) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Invalid submission status.']);
