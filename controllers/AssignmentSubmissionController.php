@@ -231,10 +231,9 @@ class AssignmentSubmissionController
     private function uploadFileViaFTP($file)
     {
         $ftp_server = $this->ftp_config['server'];
-        $ftp_user = $this->ftp_config['user'];
+        $ftp_user = $this->ftp_config['username'];
         $ftp_pass = $this->ftp_config['password'];
-        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
-        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        $public_url_base = 'https://student-lms-ftp.payshia.com';
         $tmp_path = $file['tmp_name'];
 
         $conn_id = ftp_connect($ftp_server);
@@ -247,21 +246,13 @@ class AssignmentSubmissionController
         ftp_pasv($conn_id, true);
 
         $upload_directory_name = 'assignment_submissions';
-        $remote_dir = $ftp_root . '/' . $upload_directory_name;
-
-        if (!@is_dir("ftp://$ftp_user:$ftp_pass@$ftp_server/$remote_dir")) {
-            if (!@ftp_mkdir($conn_id, $remote_dir)) {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => "Failed to create directory on FTP server: $remote_dir"]);
-                ftp_close($conn_id);
-                return false;
-            }
-        }
+        
+        @ftp_mkdir($conn_id, $upload_directory_name);
 
         $original_filename = basename($file['name']);
         $sanitized_filename = preg_replace('/[^A-Za-z0-9\._-]/', '_', str_replace(' ', '_', $original_filename));
         $file_name = uniqid() . '-' . $sanitized_filename;
-        $remote_path = $remote_dir . '/' . $file_name;
+        $remote_path = $upload_directory_name . '/' . $file_name;
 
         if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
             http_response_code(500);
@@ -278,13 +269,12 @@ class AssignmentSubmissionController
     private function deleteFileViaFTP($file_url)
     {
         $ftp_server = $this->ftp_config['server'];
-        $ftp_user = $this->ftp_config['user'];
+        $ftp_user = $this->ftp_config['username'];
         $ftp_pass = $this->ftp_config['password'];
-        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
-        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        $public_url_base = 'https://qa-lms-server.payshia.com';
         
         $relative_path = str_replace($public_url_base, '', $file_url);
-        $remote_file_path = $ftp_root . urldecode($relative_path);
+        $remote_file_path = urldecode($relative_path);
 
         $conn_id = ftp_connect($ftp_server);
         if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
