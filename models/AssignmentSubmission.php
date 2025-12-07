@@ -11,22 +11,7 @@ class AssignmentSubmission
 
     public static function createTable($db)
     {
-        $query = "
-            CREATE TABLE IF NOT EXISTS `assigment_submition` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `student_number` VARCHAR(255) NOT NULL,
-                `course_bucket_id` INT NOT NULL,
-                `assigment_id` INT NOT NULL,
-                `file_path` VARCHAR(2048) NOT NULL,
-                `grade` VARCHAR(50) DEFAULT NULL,
-                `sub_count` INT DEFAULT 1,
-                `sub_status` VARCHAR(50) DEFAULT 'submitted',
-                `created_by` INT,
-                `updated_by` INT,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            );
-        ";
+        $query = "\n            CREATE TABLE IF NOT EXISTS `assigment_submition` (\n                `id` INT AUTO_INCREMENT PRIMARY KEY,\n                `student_number` VARCHAR(255) NOT NULL,\n                `course_bucket_id` INT NOT NULL,\n                `assigment_id` INT NOT NULL,\n                `file_path` VARCHAR(2048) NOT NULL,\n                `grade` VARCHAR(50) DEFAULT NULL,\n                `sub_count` INT DEFAULT 1,\n                `sub_status` VARCHAR(50) DEFAULT 'submitted',\n                `created_by` INT,\n                `updated_by` INT,\n                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n            );\n        ";
         try {
             $db->exec($query);
         } catch (PDOException $e) {
@@ -54,15 +39,7 @@ class AssignmentSubmission
 
     public function getByFilters($filters = [])
     {
-        $query = "
-            SELECT
-                asub.*,
-                cb.course_id
-            FROM
-                " . $this->table_name . " asub
-            LEFT JOIN
-                course_bucket cb ON asub.course_bucket_id = cb.id
-        ";
+        $query = "\n            SELECT\n                asub.*,\n                cb.course_id\n            FROM\n                " . $this->table_name . " asub\n            LEFT JOIN\n                course_bucket cb ON asub.course_bucket_id = cb.id\n        ";
         $params = [];
         $where_clauses = [];
 
@@ -81,6 +58,10 @@ class AssignmentSubmission
         if (!empty($filters['assigment_id'])) {
             $where_clauses[] = "asub.assigment_id = :assigment_id";
             $params[':assigment_id'] = $filters['assigment_id'];
+        }
+        if (!empty($filters['sub_status'])) {
+            $where_clauses[] = "asub.sub_status = :sub_status";
+            $params[':sub_status'] = $filters['sub_status'];
         }
 
         if (!empty($where_clauses)) {
