@@ -122,7 +122,7 @@ class PaymentRequestController
 
         // --- End of FTP Handling ---
 
-        $data = $_POST;
+        $data = json_decode($_POST['data'], true);
         $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
         $data['hash'] = $image_hash;
 
