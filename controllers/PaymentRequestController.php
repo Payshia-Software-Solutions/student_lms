@@ -72,10 +72,10 @@ class PaymentRequestController
     {
         // --- FTP and File Handling ---
         $ftp_server = $this->ftp_config['server'];
-        $ftp_user = $this->ftp_config['user'];
+        $ftp_user = $this->ftp_config['username'];
         $ftp_pass = $this->ftp_config['password'];
-        $ftp_root = rtrim($this->ftp_config['root_path'], '/');
-        $public_url_base = rtrim($this->ftp_config['public_url'], '/');
+        $ftp_root = 'qa-lms-server.payshia.com';
+        $public_url_base = 'https://qa-lms-server.payshia.com';
 
         if (!isset($_FILES['payment_slip'])) {
             http_response_code(400);
@@ -127,7 +127,7 @@ class PaymentRequestController
             return;
         }
 
-        ftp_close($conn_.id);
+        ftp_close($conn_id);
 
         // --- End of FTP Handling ---
 
@@ -148,7 +148,7 @@ class PaymentRequestController
                     'hash' => $this->paymentRequest->hash,
                     'bank' => $this->paymentRequest->bank,
                     'branch' => $this->paymentRequest->branch,
-                    'ref' => $this->paymentRequest->ref,
+                    'ref' => $this.->ref,
                     'request_status' => $this->paymentRequest->request_status,
                     'created_at' => $this->paymentRequest->created_at,
                     'course_id' => $this->paymentRequest->course_id,
@@ -192,7 +192,7 @@ class PaymentRequestController
             }
         } else {
             http_response_code(500);
-            echo json_.encode(['status' => 'error', 'message' => 'Unable to update record']);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to update record']);
         }
     }
 
