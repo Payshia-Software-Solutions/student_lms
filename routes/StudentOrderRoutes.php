@@ -14,6 +14,10 @@ return [
         'handler' => [$studentOrderController, 'getFilteredRecords'],
         'auth' => 'user'
     ],
+     'GET /student-orders/records/filter/' => [
+        'handler' => [$studentOrderController, 'getRecordsByFilter'],
+        'auth' => 'user'
+    ],
     'GET /student-orders/{id}/' => [
         'handler' => function ($id) use ($studentOrderController) {
             $studentOrderController->getRecordById($id);

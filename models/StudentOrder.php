@@ -78,6 +78,9 @@ class StudentOrder
         if (!empty($filters['status'])) {
             $query .= ' AND so.order_status = :status';
         }
+        if (!empty($filters['student_number'])) {
+            $query .= ' AND so.student_number = :student_number';
+        }
 
         $stmt = $this->conn->prepare($query);
 
@@ -89,6 +92,9 @@ class StudentOrder
         }
         if (!empty($filters['status'])) {
             $stmt->bindParam(':status', $filters['status']);
+        }
+        if (!empty($filters['student_number'])) {
+            $stmt->bindParam(':student_number', $filters['student_number']);
         }
 
         $stmt->execute();

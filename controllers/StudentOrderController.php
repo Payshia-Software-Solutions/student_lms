@@ -33,6 +33,19 @@ class StudentOrderController
         }
     }
 
+    public function getRecordsByFilter()
+    {
+        $filters = [
+            'student_number' => $_GET['student_number'] ?? null,
+            'order_status' => $_GET['order_status'] ?? null
+        ];
+
+        $stmt = $this->studentOrder->getFiltered($filters);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->successResponse($records);
+    }
+
     public function getFilteredRecords()
     {
         $filters = [
