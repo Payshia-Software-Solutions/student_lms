@@ -148,7 +148,7 @@ class PaymentRequestController
                     'hash' => $this->paymentRequest->hash,
                     'bank' => $this->paymentRequest->bank,
                     'branch' => $this->paymentRequest->branch,
-                    'ref' => $this.->ref,
+                    'ref' => $this->paymentRequest->ref,
                     'request_status' => $this->paymentRequest->request_status,
                     'created_at' => $this->paymentRequest->created_at,
                     'course_id' => $this->paymentRequest->course_id,
