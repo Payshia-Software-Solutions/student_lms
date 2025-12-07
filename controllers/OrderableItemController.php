@@ -57,7 +57,7 @@ class OrderableItemController
             // Define paths relative to the FTP user's root directory
             $project_dir = 'qa-lms-server.payshia.com';
             $upload_folder = 'orderable_item';
-            $remote_file_path = $project_dir . '/' . $upload_folder . '/' . $fileName;
+            $remote_file_path = '/' . $upload_folder . '/' . $fileName;
             
             $ftp_conn = ftp_connect($this->ftp_config['server']);
             if (!$ftp_conn) {
