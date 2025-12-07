@@ -74,7 +74,7 @@ class PaymentRequestController
         $ftp_server = $this->ftp_config['server'];
         $ftp_user = $this->ftp_config['username'];
         $ftp_pass = $this->ftp_config['password'];
-        $public_url_base = 'https://qa-lms-server.payshia.com';
+        $public_url_base = 'https://student-lms-ftp.payshia.com';
 
         if (!isset($_FILES['payment_slip'])) {
             http_response_code(400);
