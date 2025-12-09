@@ -14,7 +14,7 @@
             $this->enrollment = new Enrollment($this->db);
         }
 
-        public function getEnrollments()
+        public function getAllRecords()
         {
             $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : null;
             $student_number = isset($_GET['student_number']) ? $_GET['student_number'] : null;
@@ -50,7 +50,7 @@
             }
         }
 
-        public function getEnrollment($id)
+        public function getRecordById($id)
         {
             $this->enrollment->id = $id;
             $found = $this->enrollment->read_single();
@@ -71,7 +71,7 @@
             }
         }
 
-        public function createEnrollment()
+        public function createRecord()
         {
             $data = json_decode(file_get_contents("php://input"));
 
@@ -87,7 +87,7 @@
             }
         }
 
-        public function updateEnrollment($id)
+        public function updateRecord($id)
         {
             $data = json_decode(file_get_contents("php://input"));
 
@@ -106,7 +106,7 @@
             }
         }
 
-        public function deleteEnrollment($id)
+        public function deleteRecord($id)
         {
             $this->enrollment->id = $id;
 
