@@ -127,42 +127,26 @@
             return false;
         }
 
-        public function getApprovedByStudent($student_id)
+        public function getByFilters($filters)
         {
-            $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = \'approved\' AND deleted_at IS NULL';
+            $query = 'SELECT * FROM ' . $this->table . ' WHERE 1=1 AND deleted_at IS NULL';
+            $params = [];
+
+            if (isset($filters['student_id'])) {
+                $query .= " AND student_id = :student_id";
+                $params[':student_id'] = $filters['student_id'];
+            }
+            if (isset($filters['course_id'])) {
+                $query .= " AND course_id = :course_id";
+                $params[':course_id'] = $filters['course_id'];
+            }
+            if (isset($filters['status'])) {
+                $query .= " AND status = :status";
+                $params[':status'] = $filters['status'];
+            }
+
             $stmt = $this->conn->prepare($query);
-    
-            $student_id = htmlspecialchars(strip_tags($student_id));
-            $stmt->bindParam(':student_id', $student_id);
-    
-            $stmt->execute();
-            return $stmt;
-        }
-    
-        public function getByStudentAndStatus($student_id, $status)
-        {
-            $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = :status AND deleted_at IS NULL';
-            $stmt = $this->conn->prepare($query);
-
-            $student_id = htmlspecialchars(strip_tags($student_id));
-            $status = htmlspecialchars(strip_tags($status));
-
-            $stmt->bindParam(':student_id', $student_id);
-            $stmt->bindParam(':status', $status);
-
-            $stmt->execute();
-            return $stmt;
-        }
-
-        public function getByStudentId($student_id)
-        {
-            $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND deleted_at IS NULL';
-            $stmt = $this->conn->prepare($query);
-    
-            $student_id = htmlspecialchars(strip_tags($student_id));
-            $stmt->bindParam(':student_id', $student_id);
-    
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt;
         }
     }

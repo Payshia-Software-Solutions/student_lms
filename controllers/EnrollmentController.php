@@ -16,18 +16,26 @@
 
         public function getAllRecords()
         {
-            $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : null;
-            $student_number = isset($_GET['student_number']) ? $_GET['student_number'] : null;
-            $status = isset($_GET['status']) ? $_GET['status'] : null;
+            $filters = [];
+            $allowed_filters = ['student_id', 'course_id', 'status', 'student_number'];
 
-            if ($student_number && $status) {
-                $stmt = $this->enrollment->getByStudentAndStatus($student_number, $status);
-            } elseif ($student_id) {
-                $stmt = $this->enrollment->getByStudentId($student_id);
+            foreach ($allowed_filters as $filter) {
+                if (isset($_GET[$filter])) {
+                    $filters[$filter] = $_GET[$filter];
+                }
+            }
+
+            if (isset($filters['student_number']) && !isset($filters['student_id'])) {
+                $filters['student_id'] = $filters['student_number'];
+                unset($filters['student_number']);
+            }
+
+            if (!empty($filters)) {
+                $stmt = $this->enrollment->getByFilters($filters);
             } else {
                 $stmt = $this->enrollment->read();
             }
-            
+
             $num = $stmt->rowCount();
 
             if ($num > 0) {
@@ -46,7 +54,7 @@
                 }
                 echo json_encode($enrollments_arr);
             } else {
-                echo json_encode(array('message' => 'No enrollments found.'));
+                echo json_encode(array());
             }
         }
 
