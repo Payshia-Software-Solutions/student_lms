@@ -89,16 +89,10 @@
 
         public function updateRecord($id)
         {
-            $data = json_decode(file_get_contents("php://input"));
-
+            $data = json_decode(file_get_contents("php://input"), true);
             $this->enrollment->id = $id;
-            $this->enrollment->student_id = $data->student_id;
-            $this->enrollment->course_id = $data->course_id;
-            $this->enrollment->enrollment_date = $data->enrollment_date;
-            $this->enrollment->grade = $data->grade;
-            $this->enrollment->status = $data->status;
 
-            if ($this->enrollment->update()) {
+            if ($this->enrollment->update($data)) {
                 echo json_encode(array('message' => 'Enrollment updated.'));
             } else {
                 http_response_code(500);

@@ -89,26 +89,25 @@
             return false;
         }
 
-        public function update()
+        public function update($data)
         {
-            $query = 'UPDATE ' . $this->table . ' SET student_id = :student_id, course_id = :course_id, enrollment_date = :enrollment_date, grade = :grade, status = :status WHERE id = :id AND deleted_at IS NULL';
+            $query_parts = [];
+            $params = [':id' => $this->id];
+            foreach ($data as $key => $value) {
+                if (property_exists($this, $key) && $key !== 'id') {
+                    $query_parts[] = "`$key` = :$key";
+                    $params[":$key"] = htmlspecialchars(strip_tags($value));
+                }
+            }
+
+            if (empty($query_parts)) {
+                return false;
+            }
+
+            $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $query_parts) . ' WHERE id = :id';
             $stmt = $this->conn->prepare($query);
-
-            $this->id = htmlspecialchars(strip_tags($this->id));
-            $this->student_id = htmlspecialchars(strip_tags($this->student_id));
-            $this->course_id = htmlspecialchars(strip_tags($this->course_id));
-            $this->enrollment_date = htmlspecialchars(strip_tags($this->enrollment_date));
-            $this->grade = htmlspecialchars(strip_tags($this->grade));
-            $this->status = htmlspecialchars(strip_tags($this->status));
-
-            $stmt->bindParam(':id', $this->id);
-            $stmt->bindParam(':student_id', $this->student_id);
-            $stmt->bindParam(':course_id', $this->course_id);
-            $stmt->bindParam(':enrollment_date', $this->enrollment_date);
-            $stmt->bindParam(':grade', $this->grade);
-            $stmt->bindParam(':status', $this->status);
-
-            if ($stmt->execute()) {
+            
+            if ($stmt->execute($params)) {
                 return true;
             }
             return false;
