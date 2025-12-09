@@ -26,7 +26,7 @@ return [
     ],
     // General collection route last among GETs
     'GET /enrollments/' => [
-        'handler' => [$enrollmentController, 'getEnrollments'],
+        'handler' => [$enrollmentController, 'getAllRecords'],
         'auth' => 'private'
     ],
     'POST /enrollments/' => [
