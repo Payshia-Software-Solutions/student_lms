@@ -5,14 +5,12 @@ require_once __DIR__ . '/../models/StudentOrder.php';
 
 class PaymentRequestController
 {
-    private $pdo;
     private $paymentRequest;
     private $studentOrder;
     private $ftp_config;
 
     public function __construct($pdo, $ftp_config)
     {
-        $this->pdo = $pdo;
         $this->paymentRequest = new PaymentRequest($pdo);
         $this->studentOrder = new StudentOrder($pdo);
         $this->ftp_config = $ftp_config;
@@ -80,7 +78,7 @@ class PaymentRequestController
 
     public function createRecord()
     {
-        // --- FTP and File Handling (Must happen before transaction) ---
+        // --- FTP and File Handling ---
         $ftp_server = $this->ftp_config['server'];
         $ftp_user = $this->ftp_config['username'];
         $ftp_pass = $this->ftp_config['password'];
@@ -128,35 +126,26 @@ class PaymentRequestController
         }
 
         ftp_close($conn_id);
+
         // --- End of FTP Handling ---
 
         $data = json_decode($_POST['data'], true);
-        $studentOrderData = $data['student_order'];
-        $paymentRequestData = $data['payment_request'];
-        
-        $paymentRequestData['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
-        $paymentRequestData['hash'] = $image_hash;
-        
-        try {
-            $this->pdo->beginTransaction();
+        $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
+        $data['hash'] = $image_hash;
 
-            $studentOrderId = $this->studentOrder->create($studentOrderData);
-            if (!$studentOrderId) {
-                throw new Exception("Failed to create student order.");
+        if (isset($data['payment_status']) && $data['payment_status'] === 'study_pack') {
+            if (isset($data['student_number'])) {
+                $latest_order = $this->studentOrder->getLatestByStudentNumber($data['student_number']);
+                if ($latest_order) {
+                    $data['ref_id'] = $latest_order['id'];
+                }
             }
+        }
 
-            $paymentRequestData['ref_id'] = $studentOrderId;
-            $paymentRequestData['ref'] = 'student_order'; // Set the reference type
+        $newId = $this->paymentRequest->create($data);
 
-            $paymentRequestId = $this->paymentRequest->create($paymentRequestData);
-            if (!$paymentRequestId) {
-                throw new Exception("Failed to create payment request.");
-            }
-
-            $this->pdo->commit();
-            
-            // Fetch the newly created payment request to return it
-            if ($this->paymentRequest->getById($paymentRequestId)) {
+        if ($newId) {
+            if ($this->paymentRequest->getById($newId)) {
                 $record_item = [
                     'id' => $this->paymentRequest->id,
                     'student_number' => $this->paymentRequest->student_number,
@@ -174,19 +163,14 @@ class PaymentRequestController
                     'course_bucket_id' => $this->paymentRequest->course_bucket_id,
                 ];
                 http_response_code(201);
-                echo json_encode([
-                    'status' => 'success',
-                    'message' => 'Order and payment request created successfully.',
-                    'data' => $record_item
-                ]);
+                echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record_item]);
             } else {
-                 throw new Exception("Failed to retrieve created payment request.");
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created record.']);
             }
-
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
+        } else {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Transaction failed: ' . $e->getMessage()]);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create record']);
         }
     }
 
