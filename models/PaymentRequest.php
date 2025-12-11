@@ -13,7 +13,9 @@ class PaymentRequest
     public $bank;
     public $branch;
     public $ref;
+    public $ref_id;
     public $request_status;
+    public $payment_status;
     public $created_at;
     public $course_id;
     public $course_bucket_id;
@@ -29,23 +31,7 @@ class PaymentRequest
     // Create table
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS payment_request (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            student_number VARCHAR(50) NOT NULL,
-            slip_url VARCHAR(255) NOT NULL,
-            payment_amount DECIMAL(10,2) NOT NULL,
-            hash VARCHAR(255) NOT NULL,
-            bank VARCHAR(100) NOT NULL,
-            branch VARCHAR(100) NOT NULL,
-            ref VARCHAR(100) NOT NULL,
-            request_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            course_id INT NOT NULL,
-            course_bucket_id INT NOT NULL,
-            FOREIGN KEY (student_number) REFERENCES users(student_number),
-            FOREIGN KEY (course_id) REFERENCES courses(id),
-            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id)
-        )";
+        $query = "CREATE TABLE IF NOT EXISTS payment_request (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            student_number VARCHAR(50) NOT NULL,\n            slip_url VARCHAR(255) NOT NULL,\n            payment_amount DECIMAL(10,2) NOT NULL,\n            hash VARCHAR(255) NOT NULL,\n            bank VARCHAR(100) NOT NULL,\n            branch VARCHAR(100) NOT NULL,\n            ref VARCHAR(100) NOT NULL,\n            ref_id VARCHAR(255) NULL,\n            request_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',\n            payment_status ENUM('course_fee', 'study_pack') NOT NULL,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            course_id INT NOT NULL,\n            course_bucket_id INT NOT NULL,\n            FOREIGN KEY (student_number) REFERENCES users(student_number),\n            FOREIGN KEY (course_id) REFERENCES courses(id),\n            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id)\n        )";
 
         try {
             $stmt = $db->prepare($query);
@@ -58,7 +44,7 @@ class PaymentRequest
     // Create a new record
     public function create($data)
     {
-        $query = "INSERT INTO payment_request (student_number, slip_url, payment_amount, hash, bank, branch, ref, request_status, course_id, course_bucket_id) VALUES (:student_number, :slip_url, :payment_amount, :hash, :bank, :branch, :ref, :request_status, :course_id, :course_bucket_id)";
+        $query = "INSERT INTO payment_request (student_number, slip_url, payment_amount, hash, bank, branch, ref, ref_id, request_status, payment_status, course_id, course_bucket_id) VALUES (:student_number, :slip_url, :payment_amount, :hash, :bank, :branch, :ref, :ref_id, :request_status, :payment_status, :course_id, :course_bucket_id)";
         $stmt = $this->conn->prepare($query);
 
         // Sanitize and bind parameters
@@ -69,7 +55,9 @@ class PaymentRequest
         $stmt->bindParam(':bank', $data['bank']);
         $stmt->bindParam(':branch', $data['branch']);
         $stmt->bindParam(':ref', $data['ref']);
+        $stmt->bindParam(':ref_id', $data['ref_id']);
         $stmt->bindParam(':request_status', $data['request_status']);
+        $stmt->bindParam(':payment_status', $data['payment_status']);
         $stmt->bindParam(':course_id', $data['course_id']);
         $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
 
@@ -82,16 +70,7 @@ class PaymentRequest
     // Get all records
     public function getAll()
     {
-        $query = "SELECT
-                    pr.*,
-                    c.course_name AS course_name,
-                    cb.name AS course_bucket_name
-                FROM
-                    payment_request pr
-                LEFT JOIN
-                    courses c ON pr.course_id = c.id
-                LEFT JOIN
-                    course_bucket cb ON pr.course_bucket_id = cb.id";
+        $query = "SELECT\n                    pr.*,\n                    c.course_name AS course_name,\n                    cb.name AS course_bucket_name\n                FROM\n                    payment_request pr\n                LEFT JOIN\n                    courses c ON pr.course_id = c.id\n                LEFT JOIN\n                    course_bucket cb ON pr.course_bucket_id = cb.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -100,17 +79,7 @@ class PaymentRequest
     // Get records by filters
     public function getByFilters($filters)
     {
-        $query = "SELECT
-                    pr.*,
-                    c.course_name AS course_name,
-                    cb.name AS course_bucket_name
-                FROM
-                    payment_request pr
-                LEFT JOIN
-                    courses c ON pr.course_id = c.id
-                LEFT JOIN
-                    course_bucket cb ON pr.course_bucket_id = cb.id
-                WHERE 1=1";
+        $query = "SELECT\n                    pr.*,\n                    c.course_name AS course_name,\n                    cb.name AS course_bucket_name\n                FROM\n                    payment_request pr\n                LEFT JOIN\n                    courses c ON pr.course_id = c.id\n                LEFT JOIN\n                    course_bucket cb ON pr.course_bucket_id = cb.id\n                WHERE 1=1";
         $params = [];
 
         if (isset($filters['course_id'])) {
@@ -133,6 +102,16 @@ class PaymentRequest
             $params[':request_status'] = $filters['request_status'];
         }
 
+        if (isset($filters['payment_status'])) {
+            $query .= " AND pr.payment_status = :payment_status";
+            $params[':payment_status'] = $filters['payment_status'];
+        }
+
+        if (isset($filters['ref_id'])) {
+            $query .= " AND pr.ref_id = :ref_id";
+            $params[':ref_id'] = $filters['ref_id'];
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute($params);
         return $stmt;
@@ -141,17 +120,7 @@ class PaymentRequest
     // Get a single record by ID
     public function getById($id)
     {
-        $query = "SELECT
-                    pr.*,
-                    c.course_name AS course_name,
-                    cb.name AS course_bucket_name
-                FROM
-                    payment_request pr
-                LEFT JOIN
-                    courses c ON pr.course_id = c.id
-                LEFT JOIN
-                    course_bucket cb ON pr.course_bucket_id = cb.id
-                WHERE pr.id = ?";
+        $query = "SELECT\n                    pr.*,\n                    c.course_name AS course_name,\n                    cb.name AS course_bucket_name\n                FROM\n                    payment_request pr\n                LEFT JOIN\n                    courses c ON pr.course_id = c.id\n                LEFT JOIN\n                    course_bucket cb ON pr.course_bucket_id = cb.id\n                WHERE pr.id = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -167,7 +136,9 @@ class PaymentRequest
             $this->bank = $row['bank'];
             $this->branch = $row['branch'];
             $this->ref = $row['ref'];
+            $this->ref_id = $row['ref_id'];
             $this->request_status = $row['request_status'];
+            $this->payment_status = $row['payment_status'];
             $this->created_at = $row['created_at'];
             $this->course_id = $row['course_id'];
             $this->course_bucket_id = $row['course_bucket_id'];
@@ -185,7 +156,7 @@ class PaymentRequest
         $params = [':id' => $id];
         $allowed_fields = [
             'student_number', 'slip_url', 'payment_amount', 'hash', 'bank',
-            'branch', 'ref', 'request_status', 'course_id', 'course_bucket_id'
+            'branch', 'ref', 'ref_id', 'request_status', 'payment_status', 'course_id', 'course_bucket_id'
         ];
 
         foreach ($data as $key => $value) {

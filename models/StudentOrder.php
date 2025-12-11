@@ -24,20 +24,7 @@ class StudentOrder
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (
-            `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `student_number` VARCHAR(50) NOT NULL,
-            `orderable_item_id` INT NOT NULL,
-            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',
-            `tracking_number` VARCHAR(50) DEFAULT NULL,
-            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,
-            `package_weight` DECIMAL(10, 2) DEFAULT NULL,
-            `order_date` DATE DEFAULT NULL,
-            `delivery_date` DATE DEFAULT NULL,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)
-        );";
+        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_number` VARCHAR(50) NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',\n            `tracking_number` VARCHAR(50) DEFAULT NULL,\n            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,\n            `package_weight` DECIMAL(10, 2) DEFAULT NULL,\n            `order_date` DATE DEFAULT NULL,\n            `delivery_date` DATE DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
 
         try {
             $stmt = $db->prepare($query);
@@ -99,6 +86,20 @@ class StudentOrder
 
         $stmt->execute();
         return $stmt;
+    }
+
+    public function getLatestByStudentNumber($student_number)
+    {
+        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
+                  LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id 
+                  WHERE so.student_number = :student_number 
+                  ORDER BY so.created_at DESC 
+                  LIMIT 1';
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':student_number', $student_number);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function create($data)

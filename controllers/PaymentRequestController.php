@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/PaymentRequest.php';
+require_once __DIR__ . '/../models/StudentOrder.php';
 
 class PaymentRequestController
 {
     private $paymentRequest;
+    private $studentOrder;
     private $ftp_config;
 
     public function __construct($pdo, $ftp_config)
     {
         $this->paymentRequest = new PaymentRequest($pdo);
+        $this->studentOrder = new StudentOrder($pdo);
         $this->ftp_config = $ftp_config;
     }
 
@@ -22,21 +25,24 @@ class PaymentRequestController
 
     public function getRecordsByFilter()
     {
-        if (!isset($_GET['course_id']) || !isset($_GET['course_bucket_id'])) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'course_id and course_bucket_id are required.']);
-            return;
-        }
-
         $filters = [];
-        $filters['course_id'] = $_GET['course_id'];
-        $filters['course_bucket_id'] = $_GET['course_bucket_id'];
-
+        if (isset($_GET['course_id'])) {
+            $filters['course_id'] = $_GET['course_id'];
+        }
+        if (isset($_GET['course_bucket_id'])) {
+            $filters['course_bucket_id'] = $_GET['course_bucket_id'];
+        }
         if (isset($_GET['student_number'])) {
             $filters['student_number'] = $_GET['student_number'];
         }
         if (isset($_GET['request_status'])) {
             $filters['request_status'] = $_GET['request_status'];
+        }
+        if (isset($_GET['payment_status'])) {
+            $filters['payment_status'] = $_GET['payment_status'];
+        }
+        if (isset($_GET['ref_id'])) {
+            $filters['ref_id'] = $_GET['ref_id'];
         }
 
         $stmt = $this->paymentRequest->getByFilters($filters);
@@ -56,7 +62,9 @@ class PaymentRequestController
                 'bank' => $this->paymentRequest->bank,
                 'branch' => $this->paymentRequest->branch,
                 'ref' => $this->paymentRequest->ref,
+                'ref_id' => $this->paymentRequest->ref_id,
                 'request_status' => $this->paymentRequest->request_status,
+                'payment_status' => $this->paymentRequest->payment_status,
                 'created_at' => $this->paymentRequest->created_at,
                 'course_id' => $this->paymentRequest->course_id,
                 'course_bucket_id' => $this->paymentRequest->course_bucket_id,
@@ -105,7 +113,6 @@ class PaymentRequestController
 
         $upload_directory_name = 'payment_slips';
         
-        // Attempt to create the directory. The '@' suppresses errors if it already exists.
         @ftp_mkdir($conn_id, $upload_directory_name);
 
         $file_name = uniqid() . '-' . basename($file['name']);
@@ -126,6 +133,15 @@ class PaymentRequestController
         $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
         $data['hash'] = $image_hash;
 
+        if (isset($data['payment_status']) && $data['payment_status'] === 'study_pack') {
+            if (isset($data['student_number'])) {
+                $latest_order = $this->studentOrder->getLatestByStudentNumber($data['student_number']);
+                if ($latest_order) {
+                    $data['ref_id'] = $latest_order['id'];
+                }
+            }
+        }
+
         $newId = $this->paymentRequest->create($data);
 
         if ($newId) {
@@ -139,7 +155,9 @@ class PaymentRequestController
                     'bank' => $this->paymentRequest->bank,
                     'branch' => $this->paymentRequest->branch,
                     'ref' => $this->paymentRequest->ref,
+                    'ref_id' => $this->paymentRequest->ref_id,
                     'request_status' => $this->paymentRequest->request_status,
+                    'payment_status' => $this->paymentRequest->payment_status,
                     'created_at' => $this->paymentRequest->created_at,
                     'course_id' => $this->paymentRequest->course_id,
                     'course_bucket_id' => $this->paymentRequest->course_bucket_id,
@@ -170,7 +188,9 @@ class PaymentRequestController
                     'bank' => $this->paymentRequest->bank,
                     'branch' => $this->paymentRequest->branch,
                     'ref' => $this->paymentRequest->ref,
+                    'ref_id' => $this->paymentRequest->ref_id,
                     'request_status' => $this->paymentRequest->request_status,
+                    'payment_status' => $this->paymentRequest->payment_status,
                     'created_at' => $this->paymentRequest->created_at,
                     'course_id' => $this->paymentRequest->course_id,
                     'course_bucket_id' => $this->paymentRequest->course_bucket_id,

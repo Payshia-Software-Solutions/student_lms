@@ -1,124 +1,99 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
-require_once __DIR__ . '/../models/OrderableItem.php';
-require_once __DIR__ . '/../models/Course.php';
-require_once __DIR__ . '/../models/CourseBucket.php';
 
 class StudentOrderController
 {
-    private $pdo;
     private $studentOrder;
 
     public function __construct($pdo)
     {
-        $this->pdo = $pdo;
-        $this->studentOrder = new StudentOrder($this->pdo);
+        $this->studentOrder = new StudentOrder($pdo);
+    }
+
+    public function getLatestOrderByStudent()
+    {
+        if (!isset($_GET['student_number'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'student_number is required.']);
+            return;
+        }
+
+        $student_number = $_GET['student_number'];
+        $latest_order = $this->studentOrder->getLatestByStudentNumber($student_number);
+
+        if ($latest_order) {
+            echo json_encode(['status' => 'success', 'data' => $latest_order]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'No orders found for this student.']);
+        }
     }
 
     public function getAllRecords()
     {
         $stmt = $this->studentOrder->read();
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->successResponse($records);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
+    public function getFilteredRecords()
+    {
+        $filters = [];
+        if(isset($_GET['course_id'])) $filters['course_id'] = $_GET['course_id'];
+        if(isset($_GET['course_bucket_id'])) $filters['course_bucket_id'] = $_GET['course_bucket_id'];
+        if(isset($_GET['status'])) $filters['status'] = $_GET['status'];
+        if(isset($_GET['student_number'])) $filters['student_number'] = $_GET['student_number'];
+
+        $stmt = $this->studentOrder->getFiltered($filters);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'data' => $records]);
     }
 
     public function getRecordById($id)
     {
         $record = $this->studentOrder->read_single($id);
         if ($record) {
-            $this->successResponse($record);
+            echo json_encode(['status' => 'success', 'data' => $record]);
         } else {
-            $this->errorResponse("Record not found.", 404);
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Record not found']);
         }
-    }
-
-    public function getRecordsByFilter()
-    {
-        $filters = [
-            'student_number' => $_GET['student_number'] ?? null,
-            'order_status' => $_GET['order_status'] ?? null
-        ];
-
-        $stmt = $this->studentOrder->getFiltered($filters);
-        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $this->successResponse($records);
-    }
-
-    public function getFilteredRecords()
-    {
-        $filters = [
-            'course_id' => $_GET['course_id'] ?? null,
-            'course_bucket_id' => $_GET['course_bucket_id'] ?? null,
-            'status' => $_GET['status'] ?? null
-        ];
-
-        $stmt = $this->studentOrder->getFiltered($filters);
-        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $orderableItem = new OrderableItem($this->pdo);
-        $course = new Course($this->pdo);
-        $courseBucket = new CourseBucket($this->pdo);
-
-        $result = [];
-        foreach ($records as $record) {
-            $orderableItemDetails = $orderableItem->read_single($record['orderable_item_id']);
-            $record['orderable_item_name'] = $orderableItemDetails ? $orderableItemDetails['name'] : null;
-
-            $courseDetails = $course->getById($record['course_id']);
-            $record['course_name'] = $courseDetails ? $courseDetails['course_name'] : null;
-
-            $courseBucketDetails = $courseBucket->getById($record['course_bucket_id']);
-            $record['course_bucket_name'] = $courseBucketDetails ? $courseBucketDetails['name'] : null;
-
-            $result[] = $record;
-        }
-
-        $this->successResponse($result);
     }
 
     public function createRecord()
     {
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id = $this->studentOrder->create($data);
-        if ($id) {
-            $this->successResponse(['id' => $id, 'message' => 'Record created successfully.'], 201);
+        $data = json_decode(file_get_contents('php://input'), true);
+        $newId = $this->studentOrder->create($data);
+        if ($newId) {
+            $record = $this->studentOrder->read_single($newId);
+            http_response_code(201);
+            echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record]);
         } else {
-            $this->errorResponse("Failed to create record.", 500);
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create record']);
         }
     }
 
     public function updateRecord($id)
     {
-        $data = json_decode(file_get_contents("php://input"), true);
+        $data = json_decode(file_get_contents('php://input'), true);
         if ($this->studentOrder->update($id, $data)) {
-            $this->successResponse(['id' => $id, 'message' => 'Record updated successfully.']);
+            $record = $this->studentOrder->read_single($id);
+            echo json_encode(['status' => 'success', 'message' => 'Record updated successfully', 'data' => $record]);
         } else {
-            $this->errorResponse("Failed to update record.", 500);
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to update record']);
         }
     }
 
     public function deleteRecord($id)
     {
         if ($this->studentOrder->delete($id)) {
-            $this->successResponse(['id' => $id, 'message' => 'Record deleted successfully.']);
+            echo json_encode(['status' => 'success', 'message' => 'Record deleted successfully']);
         } else {
-            $this->errorResponse("Failed to delete record.", 500);
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to delete record']);
         }
-    }
-
-    private function successResponse($data, $statusCode = 200)
-    {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode($data);
-    }
-
-    private function errorResponse($message, $statusCode = 400)
-    {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode(['message' => $message]);
     }
 }
