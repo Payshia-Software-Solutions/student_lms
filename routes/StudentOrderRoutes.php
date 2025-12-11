@@ -3,7 +3,8 @@
 require_once __DIR__ . '/../controllers/StudentOrderController.php';
 
 $pdo = $GLOBALS['pdo'];
-$studentOrderController = new StudentOrderController($pdo);
+$ftp_config = require __DIR__ . '/../config/ftp.php';
+$studentOrderController = new StudentOrderController($pdo, $ftp_config);
 
 return [
     'GET /student-orders/' => [

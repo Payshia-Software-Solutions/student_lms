@@ -1,14 +1,21 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
+require_once __DIR__ . '/../models/PaymentRequest.php';
 
 class StudentOrderController
 {
+    private $pdo;
     private $studentOrder;
+    private $paymentRequest;
+    private $ftp_config;
 
-    public function __construct($pdo)
+    public function __construct($pdo, $ftp_config)
     {
+        $this->pdo = $pdo;
         $this->studentOrder = new StudentOrder($pdo);
+        $this->paymentRequest = new PaymentRequest($pdo);
+        $this->ftp_config = $ftp_config;
     }
 
     public function getLatestOrderByStudent()
@@ -63,15 +70,92 @@ class StudentOrderController
 
     public function createRecord()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $newId = $this->studentOrder->create($data);
-        if ($newId) {
-            $record = $this->studentOrder->read_single($newId);
-            http_response_code(201);
-            echo json_encode(['status' => 'success', 'message' => 'Record created successfully', 'data' => $record]);
+        // --- FTP and File Handling (Must happen before transaction) ---
+        $ftp_server = $this->ftp_config['server'];
+        $ftp_user = $this->ftp_config['username'];
+        $ftp_pass = $this->ftp_config['password'];
+        $public_url_base = 'https://student-lms-ftp.payshia.com';
+
+        if (!isset($_FILES['payment_slip'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'No payment slip was uploaded.']);
+            return;
+        }
+
+        $file = $_FILES['payment_slip'];
+        $tmp_path = $file['tmp_name'];
+        $image_content = file_get_contents($tmp_path);
+        $image_hash = hash('sha256', $image_content);
+
+        $conn_id = ftp_connect($ftp_server);
+        if (!$conn_id) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
+            return;
+        }
+
+        if (ftp_login($conn_id, $ftp_user, $ftp_pass)) {
+            ftp_pasv($conn_id, true);
         } else {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Unable to create record']);
+            echo json_encode(['status' => 'error', 'message' => 'FTP login failed.']);
+            ftp_close($conn_id);
+            return;
+        }
+
+        $upload_directory_name = 'payment_slips';
+        @ftp_mkdir($conn_id, $upload_directory_name);
+        $file_name = uniqid() . '-' . basename($file['name']);
+        $remote_path = $upload_directory_name . '/' . $file_name;
+
+        if (!ftp_put($conn_id, $remote_path, $tmp_path, FTP_BINARY)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'FTP file upload failed.']);
+            ftp_close($conn_id);
+            return;
+        }
+
+        ftp_close($conn_id);
+        // --- End of FTP Handling ---
+
+        $data = json_decode($_POST['data'], true);
+        $studentOrderData = $data['student_order_data'];
+        $paymentRequestData = $data['payment_request_data'];
+
+        $paymentRequestData['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
+        $paymentRequestData['hash'] = $image_hash;
+
+        try {
+            $this->pdo->beginTransaction();
+
+            $studentOrderId = $this->studentOrder->create($studentOrderData);
+            if (!$studentOrderId) {
+                throw new Exception("Failed to create student order.");
+            }
+
+            $paymentRequestData['ref_id'] = $studentOrderId;
+            $paymentRequestData['ref'] = 'student_order';
+
+            $paymentRequestId = $this->paymentRequest->create($paymentRequestData);
+            if (!$paymentRequestId) {
+                throw new Exception("Failed to create payment request.");
+            }
+
+            $this->pdo->commit();
+
+            $record = $this->studentOrder->read_single($studentOrderId);
+
+            http_response_code(201);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Order and payment request created successfully.',
+                'data' => $record
+            ]);
+
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Transaction failed: ' . $e->getMessage()]);
         }
     }
 
