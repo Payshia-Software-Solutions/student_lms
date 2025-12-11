@@ -37,7 +37,7 @@ return [
     ],
 
     // Update course - Private (JWT)
-    'PUT /courses/{id}/' => [
+    'POST /courses/{id}/' => [
         'handler' => function ($id) use ($courseController) {
             $courseController->updateRecord($id);
         },
