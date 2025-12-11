@@ -130,19 +130,30 @@ class PaymentRequestController
         // --- End of FTP Handling ---
 
         $data = json_decode($_POST['data'], true);
-        $data['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
-        $data['hash'] = $image_hash;
+        
+        // Correctly extract the nested payment data
+        if (!isset($data['payment_request_data'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'payment_request_data key is missing.']);
+            return;
+        }
+        $paymentData = $data['payment_request_data'];
 
-        if (isset($data['payment_status']) && $data['payment_status'] === 'study_pack') {
-            if (isset($data['student_number'])) {
-                $latest_order = $this->studentOrder->getLatestByStudentNumber($data['student_number']);
+        $paymentData['slip_url'] = $public_url_base . '/' . $upload_directory_name . '/' . $file_name;
+        $paymentData['hash'] = $image_hash;
+
+        // This part links a payment to an order if the payment is for a 'study_pack'
+        if (isset($paymentData['payment_status']) && $paymentData['payment_status'] === 'study_pack') {
+            if (isset($paymentData['student_number'])) {
+                $latest_order = $this->studentOrder->getLatestByStudentNumber($paymentData['student_number']);
                 if ($latest_order) {
-                    $data['ref_id'] = $latest_order['id'];
+                    $paymentData['ref_id'] = $latest_order['id'];
+                    $paymentData['ref'] = 'student_order';
                 }
             }
         }
 
-        $newId = $this->paymentRequest->create($data);
+        $newId = $this->paymentRequest->create($paymentData);
 
         if ($newId) {
             if ($this->paymentRequest->getById($newId)) {
@@ -170,7 +181,7 @@ class PaymentRequestController
             }
         } else {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Unable to create record']);
+            echo json_encode(['status' => 'error', 'message' => 'Unable to create record. Check for missing fields.']);
         }
     }
 
