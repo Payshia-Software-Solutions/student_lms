@@ -37,7 +37,7 @@ class StudentOrderController
         echo json_encode(['status' => 'success', 'data' => $records]);
     }
 
-    public function getFilteredRecords()
+    public function getRecordsByFilter()
     {
         $filters = [];
         if(isset($_GET['course_id'])) $filters['course_id'] = $_GET['course_id'];
