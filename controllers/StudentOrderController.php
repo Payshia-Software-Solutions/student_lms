@@ -42,7 +42,7 @@ class StudentOrderController
         $filters = [];
         if(isset($_GET['course_id'])) $filters['course_id'] = $_GET['course_id'];
         if(isset($_GET['course_bucket_id'])) $filters['course_bucket_id'] = $_GET['course_bucket_id'];
-        if(isset($_GET['status'])) $filters['status'] = $_GET['status'];
+        if(isset($_GET['order_status'])) $filters['status'] = $_GET['order_status'];
         if(isset($_GET['student_number'])) $filters['student_number'] = $_GET['student_number'];
 
         $stmt = $this->studentOrder->getFiltered($filters);
