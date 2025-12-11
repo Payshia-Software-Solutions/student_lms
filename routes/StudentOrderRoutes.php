@@ -11,7 +11,7 @@ return [
         'auth' => 'admin'
     ],
     'GET /student-orders/filter/' => [
-        'handler' => [$studentOrderController, 'getFilteredRecords'],
+        'handler' => [$studentOrderController, 'getRecordsByFilter'],
         'auth' => 'user'
     ],
      'GET /student-orders/records/filter/' => [
