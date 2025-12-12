@@ -9,6 +9,13 @@ class StudentOrder
     public $student_number;
     public $orderable_item_id;
     public $order_status;
+    public $address_line_1;
+    public $address_line_2;
+    public $city;
+    public $district;
+    public $postal_code;
+    public $phone_number_1;
+    public $phone_number_2;
     public $tracking_number;
     public $cod_amount;
     public $package_weight;
@@ -24,7 +31,7 @@ class StudentOrder
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_number` VARCHAR(50) NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',\n            `tracking_number` VARCHAR(50) DEFAULT NULL,\n            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,\n            `package_weight` DECIMAL(10, 2) DEFAULT NULL,\n            `order_date` DATE DEFAULT NULL,\n            `delivery_date` DATE DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
+        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_number` VARCHAR(50) NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',\n            `address_line_1` VARCHAR(255) NOT NULL,\n            `address_line_2` VARCHAR(255) DEFAULT NULL,\n            `city` VARCHAR(100) NOT NULL,\n            `district` VARCHAR(100) NOT NULL,\n            `postal_code` VARCHAR(20) NOT NULL,\n            `phone_number_1` VARCHAR(20) NOT NULL,\n            `phone_number_2` VARCHAR(20) DEFAULT NULL,\n            `tracking_number` VARCHAR(50) DEFAULT NULL,\n            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,\n            `package_weight` DECIMAL(10, 2) DEFAULT NULL,\n            `order_date` DATE DEFAULT NULL,\n            `delivery_date` DATE DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
 
         try {
             $stmt = $db->prepare($query);
@@ -104,12 +111,19 @@ class StudentOrder
 
     public function create($data)
     {
-        $query = 'INSERT INTO ' . $this->table . ' (student_number, orderable_item_id, order_status, tracking_number, cod_amount, package_weight, order_date, delivery_date) VALUES (:student_number, :orderable_item_id, :order_status, :tracking_number, :cod_amount, :package_weight, :order_date, :delivery_date)';
+        $query = 'INSERT INTO ' . $this->table . ' (student_number, orderable_item_id, order_status, address_line_1, address_line_2, city, district, postal_code, phone_number_1, phone_number_2, tracking_number, cod_amount, package_weight, order_date, delivery_date) VALUES (:student_number, :orderable_item_id, :order_status, :address_line_1, :address_line_2, :city, :district, :postal_code, :phone_number_1, :phone_number_2, :tracking_number, :cod_amount, :package_weight, :order_date, :delivery_date)';
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':student_number', $data['student_number']);
         $stmt->bindParam(':orderable_item_id', $data['orderable_item_id']);
         $stmt->bindParam(':order_status', $data['order_status']);
+        $stmt->bindParam(':address_line_1', $data['address_line_1']);
+        $stmt->bindParam(':address_line_2', $data['address_line_2']);
+        $stmt->bindParam(':city', $data['city']);
+        $stmt->bindParam(':district', $data['district']);
+        $stmt->bindParam(':postal_code', $data['postal_code']);
+        $stmt->bindParam(':phone_number_1', $data['phone_number_1']);
+        $stmt->bindParam(':phone_number_2', $data['phone_number_2']);
         $stmt->bindParam(':tracking_number', $data['tracking_number']);
         $stmt->bindParam(':cod_amount', $data['cod_amount']);
         $stmt->bindParam(':package_weight', $data['package_weight']);
@@ -126,7 +140,7 @@ class StudentOrder
     {
         $fields = [];
         $params = [':id' => $id];
-        $allowed_fields = ['student_number', 'orderable_item_id', 'order_status', 'tracking_number', 'cod_amount', 'package_weight', 'order_date', 'delivery_date'];
+        $allowed_fields = ['student_number', 'orderable_item_id', 'order_status', 'address_line_1', 'address_line_2', 'city', 'district', 'postal_code', 'phone_number_1', 'phone_number_2', 'tracking_number', 'cod_amount', 'package_weight', 'order_date', 'delivery_date'];
 
         foreach ($data as $key => $value) {
             if (in_array($key, $allowed_fields)) {
