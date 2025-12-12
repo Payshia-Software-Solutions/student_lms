@@ -39,7 +39,7 @@ return [
     ],
 
     // Update a course bucket
-    'PUT /course_buckets/{id}/' => [
+    'POST /course_buckets/{id}/' => [
         'handler' => function ($id) use ($courseBucketController) {
             $courseBucketController->updateRecord($id);
         },
