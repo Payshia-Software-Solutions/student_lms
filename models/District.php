@@ -1,77 +1,109 @@
 <?php
-
 class District
 {
-    public static function createTable($db)
-    {
-        $query = "CREATE TABLE IF NOT EXISTS districts (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            name VARCHAR(255) NOT NULL,\n            province_id INT NOT NULL,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL,\n            FOREIGN KEY (province_id) REFERENCES provinces(id)\n        );";
+    private $conn;
+    private $table = 'districts';
 
+    public $id;
+    public $province_id;
+    public $name_en;
+    public $name_si;
+    public $name_ta;
+
+    public function __construct($db)
+    {
+        $this->conn = $db;
+    }
+
+    public static function createTable($pdo)
+    {
         try {
-            $db->exec($query);
+            $sql = "
+                CREATE TABLE IF NOT EXISTS `districts` (
+                 `id` int(11) NOT NULL AUTO_INCREMENT,
+                 `province_id` int(11) NOT NULL,
+                 `name_en` varchar(45) DEFAULT NULL,
+                 `name_si` varchar(45) DEFAULT NULL,
+                 `name_ta` varchar(45) DEFAULT NULL,
+                 PRIMARY KEY (`id`),
+                 KEY `provinces_id` (`province_id`)
+                ) ENGINE=MyISAM AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci
+            ";
+            $pdo->exec($sql);
         } catch (PDOException $e) {
-            error_log("Error creating table 'districts': " . $e->getMessage());
+            error_log("Error creating districts table: " . $e->getMessage());
         }
     }
 
-    public static function seed($db)
+    public function getAll()
     {
-        try {
-            $query = "SELECT COUNT(*) FROM districts";
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-            $count = $stmt->fetchColumn();
-
-            if ($count == 0) {
-                $districts = [
-                    ['name' => 'Kandy', 'province_id' => 1],
-                    ['name' => 'Matale', 'province_id' => 1],
-                    ['name' => 'Nuwara Eliya', 'province_id' => 1],
-                    ['name' => 'Ampara', 'province_id' => 2],
-                    ['name' => 'Batticaloa', 'province_id' => 2],
-                    ['name' => 'Trincomalee', 'province_id' => 2],
-                    ['name' => 'Anuradhapura', 'province_id' => 3],
-                    ['name' => 'Polonnaruwa', 'province_id' => 3],
-                    ['name' => 'Jaffna', 'province_id' => 4],
-                    ['name' => 'Kilinochchi', 'province_id' => 4],
-                    ['name' => 'Mannar', 'province_id' => 4],
-                    ['name' => 'Mullaitivu', 'province_id' => 4],
-                    ['name' => 'Vavuniya', 'province_id' => 4],
-                    ['name' => 'Kurunegala', 'province_id' => 5],
-                    ['name' => 'Puttalam', 'province_id' => 5],
-                    ['name' => 'Kegalle', 'province_id' => 6],
-                    ['name' => 'Ratnapura', 'province_id' => 6],
-                    ['name' => 'Galle', 'province_id' => 7],
-                    ['name' => 'Hambantota', 'province_id' => 7],
-                    ['name' => 'Matara', 'province_id' => 7],
-                    ['name' => 'Badulla', 'province_id' => 8],
-                    ['name' => 'Monaragala', 'province_id' => 8],
-                    ['name' => 'Colombo', 'province_id' => 9],
-                    ['name' => 'Gampaha', 'province_id' => 9],
-                    ['name' => 'Kalutara', 'province_id' => 9],
-                ];
-
-                $query = "INSERT INTO districts (name, province_id) VALUES (:name, :province_id)";
-                $stmt = $db->prepare($query);
-
-                foreach ($districts as $district) {
-                    $stmt->bindValue(':name', $district['name']);
-                    $stmt->bindValue(':province_id', $district['province_id']);
-                    $stmt->execute();
-                }
-            }
-        } catch (PDOException $e) {
-            error_log("Error seeding 'districts' table: " . $e->getMessage());
-        }
+        $query = 'SELECT * FROM ' . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
     }
 
-    public static function dropTable($db)
+    public function getById($id)
     {
-        $query = "DROP TABLE IF EXISTS districts";
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    public function getByProvinceId($province_id)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE province_id = :province_id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':province_id', $province_id);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        try {
-            $db->exec($query);
-        } catch (PDOException $e) {
-            error_log("Error dropping table 'districts': " . $e->getMessage());
+    public function create($data)
+    {
+        $query = 'INSERT INTO ' . $this->table . ' (province_id, name_en, name_si, name_ta) VALUES (:province_id, :name_en, :name_si, :name_ta)';
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':province_id', $data['province_id']);
+        $stmt->bindParam(':name_en', $data['name_en']);
+        $stmt->bindParam(':name_si', $data['name_si']);
+        $stmt->bindParam(':name_ta', $data['name_ta']);
+
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
         }
+        return false;
+    }
+
+    public function update($id, $data)
+    {
+        $query = 'UPDATE ' . $this->table . ' SET province_id = :province_id, name_en = :name_en, name_si = :name_si, name_ta = :name_ta WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':province_id', $data['province_id']);
+        $stmt->bindParam(':name_en', $data['name_en']);
+        $stmt->bindParam(':name_si', $data['name_si']);
+        $stmt->bindParam(':name_ta', $data['name_ta']);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
+    public function delete($id)
+    {
+        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
     }
 }
+?>

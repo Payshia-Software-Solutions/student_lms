@@ -1,104 +1,133 @@
 <?php
-
 class City
 {
-    public static function createTable($db)
-    {
-        $query = "CREATE TABLE IF NOT EXISTS cities (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            name VARCHAR(255) NOT NULL,\n            district_id INT NOT NULL,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            deleted_at TIMESTAMP NULL,\n            FOREIGN KEY (district_id) REFERENCES districts(id)\n        );";
+    private $conn;
+    private $table = 'cities';
 
+    public $id;
+    public $district_id;
+    public $name_en;
+    public $name_si;
+    public $name_ta;
+    public $sub_name_en;
+    public $sub_name_si;
+    public $sub_name_ta;
+    public $postcode;
+    public $latitude;
+    public $longitude;
+
+    public function __construct($db)
+    {
+        $this->conn = $db;
+    }
+
+    public static function createTable($pdo)
+    {
         try {
-            $db->exec($query);
+            $sql = "
+                CREATE TABLE IF NOT EXISTS `cities` (
+                 `id` int(11) NOT NULL AUTO_INCREMENT,
+                 `district_id` int(11) NOT NULL,
+                 `name_en` varchar(45) DEFAULT NULL,
+                 `name_si` varchar(45) DEFAULT NULL,
+                 `name_ta` varchar(45) DEFAULT NULL,
+                 `sub_name_en` varchar(45) DEFAULT NULL,
+                 `sub_name_si` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_sinhala_ci DEFAULT NULL,
+                 `sub_name_ta` varchar(45) DEFAULT NULL,
+                 `postcode` varchar(15) DEFAULT NULL,
+                 `latitude` double DEFAULT NULL,
+                 `longitude` double DEFAULT NULL,
+                 PRIMARY KEY (`id`),
+                 KEY `fk_cities_districts1_idx` (`district_id`)
+                ) ENGINE=MyISAM AUTO_INCREMENT=1863 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci
+            ";
+            $pdo->exec($sql);
         } catch (PDOException $e) {
-            error_log("Error creating table 'cities': " . $e->getMessage());
+            error_log("Error creating cities table: " . $e->getMessage());
         }
     }
 
-    public static function seed($db)
+    public function getAll()
     {
-        try {
-            $query = "SELECT COUNT(*) FROM cities";
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-            $count = $stmt->fetchColumn();
-
-            if ($count == 0) {
-                $cities = [
-                    // Kandy District
-                    ['name' => 'Kandy', 'district_id' => 1],
-                    ['name' => 'Gampola', 'district_id' => 1],
-                    ['name' => 'Nawalapitiya', 'district_id' => 1],
-                    ['name' => 'Peradeniya', 'district_id' => 1],
-
-                    // Matale District
-                    ['name' => 'Matale', 'district_id' => 2],
-                    ['name' => 'Dambulla', 'district_id' => 2],
-                    ['name' => 'Sigiriya', 'district_id' => 2],
-
-                    // Nuwara Eliya District
-                    ['name' => 'Nuwara Eliya', 'district_id' => 3],
-                    ['name' => 'Hatton', 'district_id' => 3],
-                    ['name' => 'Nanu Oya', 'district_id' => 3],
-
-                    // Ampara District
-                    ['name' => 'Ampara', 'district_id' => 4],
-                    ['name' => 'Akkaraipattu', 'district_id' => 4],
-                    ['name' => 'Kalmunai', 'district_id' => 4],
-
-                    // Batticaloa District
-                    ['name' => 'Batticaloa', 'district_id' => 5],
-
-                    // Trincomalee District
-                    ['name' => 'Trincomalee', 'district_id' => 6],
-
-                    // Anuradhapura District
-                    ['name' => 'Anuradhapura', 'district_id' => 7],
-
-                    // Polonnaruwa District
-                    ['name' => 'Polonnaruwa', 'district_id' => 8],
-
-                    // Jaffna District
-                    ['name' => 'Jaffna', 'district_id' => 9],
-
-                    // Colombo District
-                    ['name' => 'Colombo', 'district_id' => 23],
-                    ['name' => 'Dehiwala-Mount Lavinia', 'district_id' => 23],
-                    ['name' => 'Moratuwa', 'district_id' => 23],
-                    ['name' => 'Sri Jayewardenepura Kotte', 'district_id' => 23],
-
-                    // Gampaha District
-                    ['name' => 'Gampaha', 'district_id' => 24],
-                    ['name' => 'Negombo', 'district_id' => 24],
-                    ['name' => 'Ja-Ela', 'district_id' => 24],
-
-                    // Kalutara District
-                    ['name' => 'Kalutara', 'district_id' => 25],
-                    ['name' => 'Panadura', 'district_id' => 25],
-                    ['name' => 'Horana', 'district_id' => 25],
-                ];
-
-
-                $query = "INSERT INTO cities (name, district_id) VALUES (:name, :district_id)";
-                $stmt = $db->prepare($query);
-
-                foreach ($cities as $city) {
-                    $stmt->bindValue(':name', $city['name']);
-                    $stmt->bindValue(':district_id', $city['district_id']);
-                    $stmt->execute();
-                }
-            }
-        } catch (PDOException $e) {
-            error_log("Error seeding 'cities' table: " . $e->getMessage());
-        }
+        $query = 'SELECT * FROM ' . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
     }
 
-    public static function dropTable($db)
+    public function getById($id)
     {
-        $query = "DROP TABLE IF EXISTS cities";
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    public function getByDistrictId($district_id)
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE district_id = :district_id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':district_id', $district_id);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        try {
-            $db->exec($query);
-        } catch (PDOException $e) {
-            error_log("Error dropping table 'cities': " . $e->getMessage());
+    public function create($data)
+    {
+        $query = 'INSERT INTO ' . $this->table . ' (district_id, name_en, name_si, name_ta, sub_name_en, sub_name_si, sub_name_ta, postcode, latitude, longitude) VALUES (:district_id, :name_en, :name_si, :name_ta, :sub_name_en, :sub_name_si, :sub_name_ta, :postcode, :latitude, :longitude)';
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':district_id', $data['district_id']);
+        $stmt->bindParam(':name_en', $data['name_en']);
+        $stmt->bindParam(':name_si', $data['name_si']);
+        $stmt->bindParam(':name_ta', $data['name_ta']);
+        $stmt->bindParam(':sub_name_en', $data['sub_name_en']);
+        $stmt->bindParam(':sub_name_si', $data['sub_name_si']);
+        $stmt->bindParam(':sub_name_ta', $data['sub_name_ta']);
+        $stmt->bindParam(':postcode', $data['postcode']);
+        $stmt->bindParam(':latitude', $data['latitude']);
+        $stmt->bindParam(':longitude', $data['longitude']);
+
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
         }
+        return false;
+    }
+
+    public function update($id, $data)
+    {
+        $query = 'UPDATE ' . $this->table . ' SET district_id = :district_id, name_en = :name_en, name_si = :name_si, name_ta = :name_ta, sub_name_en = :sub_name_en, sub_name_si = :sub_name_si, sub_name_ta = :sub_name_ta, postcode = :postcode, latitude = :latitude, longitude = :longitude WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':district_id', $data['district_id']);
+        $stmt->bindParam(':name_en', $data['name_en']);
+        $stmt->bindParam(':name_si', $data['name_si']);
+        $stmt->bindParam(':name_ta', $data['name_ta']);
+        $stmt->bindParam(':sub_name_en', $data['sub_name_en']);
+        $stmt->bindParam(':sub_name_si', $data['sub_name_si']);
+        $stmt->bindParam(':sub_name_ta', $data['sub_name_ta']);
+        $stmt->bindParam(':postcode', $data['postcode']);
+        $stmt->bindParam(':latitude', $data['latitude']);
+        $stmt->bindParam(':longitude', $data['longitude']);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
+    public function delete($id)
+    {
+        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
     }
 }
+?>

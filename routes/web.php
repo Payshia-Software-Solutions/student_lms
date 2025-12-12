@@ -11,6 +11,8 @@ require_once __DIR__ . '/../models/OrderableItem.php';
 require_once __DIR__ . '/../models/StudentOrder.php';
 require_once __DIR__ . '/../models/UserFullDetails.php';
 require_once __DIR__ . '/../models/StudentPaymentCourse.php';
+require_once __DIR__ . '/../models/District.php';
+require_once __DIR__ . '/../models/City.php';
 
 // Instantiate DB & connect
 $database = new Database();
@@ -82,6 +84,9 @@ $AssignmentSubmissionRoutes = require_once __DIR__ . '/AssignmentSubmissionRoute
 $OrderableItemRoutes = require_once __DIR__ . '/OrderableItemRoutes.php';
 $StudentOrderRoutes = require_once __DIR__ . '/StudentOrderRoutes.php';
 $UserFullDetailsRoutes = require_once __DIR__ . '/UserFullDetailsRoutes.php';
+$DistrictRoutes = require_once __DIR__ . '/DistrictRoutes.php';
+$CityRoutes = require_once __DIR__ . '/CityRoutes.php';
+
 
 
 Enrollment::createTable($GLOBALS['pdo']);
@@ -89,6 +94,8 @@ OrderableItem::createTable($GLOBALS['pdo']);
 StudentOrder::createTable($GLOBALS['pdo']);
 UserFullDetails::createTable($GLOBALS['pdo']);
 StudentPaymentCourse::createTable($GLOBALS['pdo']);
+District::createTable($GLOBALS['pdo']);
+City::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
@@ -108,6 +115,8 @@ $routes = array_merge(
     $OrderableItemRoutes,
     $StudentOrderRoutes,
     $UserFullDetailsRoutes,
+    $DistrictRoutes,
+    $CityRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
