@@ -2,8 +2,7 @@
 
 require_once __DIR__ . '/../controllers/CityController.php';
 
-$pdo = Database::getInstance()->getConnection();
-$cityController = new CityController($pdo);
+$cityController = new CityController($GLOBALS['pdo']);
 
 return [
     // Get all cities, or cities by district
