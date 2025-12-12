@@ -22,19 +22,7 @@
         public static function createTable($pdo)
         {
             try {
-                $sql = "
-                    CREATE TABLE IF NOT EXISTS enrollments (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        student_id VARCHAR(255) NOT NULL,
-                        course_id INT NOT NULL,
-                        enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        grade VARCHAR(10) NULL,
-                        status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                        deleted_at TIMESTAMP NULL
-                    )
-                ";
+                $sql = "\n                    CREATE TABLE IF NOT EXISTS enrollments (\n                        id INT AUTO_INCREMENT PRIMARY KEY,\n                        student_id VARCHAR(255) NOT NULL,\n                        course_id INT NOT NULL,\n                        enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n                        grade VARCHAR(10) NULL,\n                        status VARCHAR(50) NOT NULL DEFAULT 'pending',\n                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n                        deleted_at TIMESTAMP NULL\n                    )\n                ";
                 $pdo->exec($sql);
             } catch (PDOException $e) {
                 error_log("Error creating enrollments table: " . $e->getMessage());
@@ -147,6 +135,18 @@
 
             $stmt = $this->conn->prepare($query);
             $stmt->execute($params);
+            return $stmt;
+        }
+
+        public function getByStudentAndStatus($student_id, $status)
+        {
+            $query = 'SELECT * FROM ' . $this->table . ' WHERE student_id = :student_id AND status = :status AND deleted_at IS NULL';
+            $stmt = $this->conn->prepare($query);
+
+            $stmt->bindParam(':student_id', $student_id);
+            $stmt->bindParam(':status', $status);
+
+            $stmt->execute();
             return $stmt;
         }
     }
