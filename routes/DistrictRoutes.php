@@ -2,8 +2,7 @@
 
 require_once __DIR__ . '/../controllers/DistrictController.php';
 
-$pdo = Database::getInstance()->getConnection();
-$districtController = new DistrictController($pdo);
+$districtController = new DistrictController($GLOBALS['pdo']);
 
 return [
     // Get all districts, or districts by province
