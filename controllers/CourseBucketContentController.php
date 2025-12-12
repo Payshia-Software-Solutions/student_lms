@@ -77,7 +77,7 @@ class CourseBucketContentController
     {
         if (!isset($_POST['data'])) {
             http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Update data not provided in the 'data' field.']);
+            echo json_encode(['status' => 'error', 'message' => 'Update data not provided in the \'data\' field.']);
             return;
         }
 
@@ -153,7 +153,7 @@ class CourseBucketContentController
         $public_url_base = rtrim($this->ftp_config['public_url'], '/');
         $tmp_path = $file['tmp_name'];
 
-        $conn_id = ftp_connect($ftp_server);
+        $conn_.id = ftp_connect($ftp_server);
         if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
