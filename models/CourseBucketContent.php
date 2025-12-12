@@ -144,19 +144,25 @@ class CourseBucketContent
 
     public function update($id, $data)
     {
-        $query = "UPDATE " . $this->table_name . " SET course_id = :course_id, course_bucket_id = :course_bucket_id, content_type = :content_type, content_title = :content_title, content = :content, is_active = :is_active, updated_by = :updated_by WHERE id = :id";
+        $fields = [];
+        $params = [':id' => $id];
+        $allowed_fields = ['content_type', 'content_title', 'content', 'is_active', 'updated_by'];
+
+        foreach ($allowed_fields as $field) {
+            if (isset($data[$field])) {
+                $fields[] = "`$field` = :$field";
+                $params[':' . $field] = $data[$field];
+            }
+        }
+
+        if (empty($fields)) {
+            return true; // No fields to update
+        }
+
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $fields) . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':course_id', $data['course_id']);
-        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
-        $stmt->bindParam(':content_type', $data['content_type']);
-        $stmt->bindParam(':content_title', $data['content_title']);
-        $stmt->bindParam(':content', $data['content']);
-        $stmt->bindParam(':is_active', $data['is_active']);
-        $stmt->bindParam(':updated_by', $data['updated_by']);
-
-        if ($stmt->execute()) {
+        if ($stmt->execute($params)) {
             return true;
         }
 
