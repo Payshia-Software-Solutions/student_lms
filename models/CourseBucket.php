@@ -37,8 +37,7 @@ class CourseBucket
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by INT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            updated_by INT,
-            FOREIGN KEY (course_id) REFERENCES courses(id)
+            updated_by INT
         );";
 
         try {

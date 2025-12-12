@@ -36,9 +36,7 @@ class CourseBucketContent
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by INT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            updated_by INT,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id) ON DELETE CASCADE
+            updated_by INT
         );";
         $pdo->exec($sql);
     }
