@@ -98,8 +98,8 @@ class CourseBucketContentController
             $updatedRecord = $this->courseBucketContent->getById($id);
             if ($updatedRecord) {
                 echo json_encode([
-                    'status' => 'success', 
-                    'message' => 'Course bucket content updated successfully', 
+                    'status' => 'success',
+                    'message' => 'Course bucket content updated successfully',
                     'data' => $updatedRecord
                 ]);
             } else {
@@ -138,7 +138,7 @@ class CourseBucketContentController
             'created_at' => $content->created_at,
             'created_by' => $content->created_by,
             'updated_at' => $content->updated_at,
-            'updated_by' => $content->updated_by,
+            'updated_by' => $content->updated_by
         ];
     }
     
@@ -153,7 +153,7 @@ class CourseBucketContentController
         $public_url_base = rtrim($this->ftp_config['public_url'], '/');
         $tmp_path = $file['tmp_name'];
 
-        $conn_.id = ftp_connect($ftp_server);
+        $conn_id = ftp_connect($ftp_server);
         if (!$conn_id || !ftp_login($conn_id, $ftp_user, $ftp_pass)) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'FTP connection failed.']);
