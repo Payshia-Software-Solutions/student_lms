@@ -59,10 +59,10 @@ class CourseBucketContentController
 
         $newId = $this->courseBucketContent->create($data);
         if ($newId) {
-            if ($this->courseBucketContent->getById($newId)) {
-                $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
+            $record = $this->courseBucketContent->getById($newId);
+            if ($record) {
                 http_response_code(201);
-                echo json_encode(['status' => 'success', 'message' => 'Course bucket content created successfully', 'data' => $courseBucketContent_item]);
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket content created successfully', 'data' => $record]);
             } else {
                 http_response_code(500);
                 echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created course bucket content.']);
@@ -75,11 +75,33 @@ class CourseBucketContentController
 
     public function updateRecord($id)
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        if (!isset($_POST['data'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Update data not provided in the 'data' field.']);
+            return;
+        }
+
+        $data = json_decode($_POST['data'], true);
+
+        // Handle file upload if a new file is provided for the update.
+        if (isset($_FILES['file'])) {
+            $file_url = $this->uploadFileViaFTP($_FILES['file']);
+            if ($file_url) {
+                $data['content'] = $file_url;
+            } else {
+                // Error response is handled within the FTP function.
+                return;
+            }
+        }
+    
         if ($this->courseBucketContent->update($id, $data)) {
-            $record = $this->courseBucketContent->getById($id);
-            if ($record) {
-                echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully', 'data' => $record]);
+            $updatedRecord = $this->courseBucketContent->getById($id);
+            if ($updatedRecord) {
+                echo json_encode([
+                    'status' => 'success', 
+                    'message' => 'Course bucket content updated successfully', 
+                    'data' => $updatedRecord
+                ]);
             } else {
                  http_response_code(404);
                 echo json_encode(['status' => 'error', 'message' => 'Course bucket content not found after update']);
