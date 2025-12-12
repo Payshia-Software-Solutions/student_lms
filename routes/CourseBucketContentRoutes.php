@@ -21,7 +21,7 @@ return [
         'handler' => [$courseBucketContentController, 'createRecord'],
         'auth' => 'user'
     ],
-    'PUT /course-bucket-contents/{id}/' => [
+    'POST /course-bucket-contents/{id}/' => [
         'handler' => function ($id) use ($courseBucketContentController) {
             $courseBucketContentController->updateRecord($id);
         },
