@@ -48,18 +48,9 @@ class CourseBucketController
 
     public function getRecordById($id)
     {
-        if ($this->courseBucket->getById($id)) {
-            $courseBucket_item = [
-                'id' => $this->courseBucket->id,
-                'bucket_name' => $this->courseBucket->name,
-                'course_id' => $this->courseBucket->course_id,
-                'is_active' => $this->courseBucket->is_active,
-                'created_at' => $this->courseBucket->created_at,
-                'created_by' => $this->courseBucket->created_by,
-                'updated_at' => $this->courseBucket->updated_at,
-                'updated_by' => $this->courseBucket->updated_by,
-            ];
-            echo json_encode(['status' => 'success', 'data' => $courseBucket_item]);
+        $record = $this->courseBucket->getById($id);
+        if ($record) {
+            echo json_encode(['status' => 'success', 'data' => $record]);
         } else {
             http_response_code(404);
             echo json_encode(['status' => 'error', 'message' => 'Course bucket not found']);
@@ -72,19 +63,10 @@ class CourseBucketController
         $newId = $this->courseBucket->create($data);
 
         if ($newId) {
-            if ($this->courseBucket->getById($newId)) {
-                $courseBucket_item = [
-                    'id' => $this->courseBucket->id,
-                    'bucket_name' => $this->courseBucket->name,
-                    'course_id' => $this->courseBucket->course_id,
-                    'is_active' => $this->courseBucket->is_active,
-                    'created_at' => $this->courseBucket->created_at,
-                    'created_by' => $this->courseBucket->created_by,
-                    'updated_at' => $this->courseBucket->updated_at,
-                    'updated_by' => $this->courseBucket->updated_by,
-                ];
+            $record = $this->courseBucket->getById($newId);
+            if ($record) {
                 http_response_code(201);
-                echo json_encode(['status' => 'success', 'message' => 'Course bucket created successfully', 'data' => $courseBucket_item]);
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket created successfully', 'data' => $record]);
             } else {
                 http_response_code(500);
                 echo json_encode(['status' => 'error', 'message' => 'Unable to retrieve created course bucket.']);
@@ -99,18 +81,9 @@ class CourseBucketController
     {
         $data = json_decode(file_get_contents('php://input'), true);
         if ($this->courseBucket->update($id, $data)) {
-            if ($this->courseBucket->getById($id)) {
-                $courseBucket_item = [
-                    'id' => $this->courseBucket->id,
-                    'bucket_name' => $this->courseBucket->name,
-                    'course_id' => $this->courseBucket->course_id,
-                    'is_active' => $this->courseBucket->is_active,
-                    'created_at' => $this->courseBucket->created_at,
-                    'created_by' => $this->courseBucket->created_by,
-                    'updated_at' => $this->courseBucket->updated_at,
-                    'updated_by' => $this->courseBucket->updated_by,
-                ];
-                echo json_encode(['status' => 'success', 'message' => 'Course bucket updated successfully', 'data' => $courseBucket_item]);
+            $record = $this->courseBucket->getById($id);
+            if ($record) {
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket updated successfully', 'data' => $record]);
             } else {
                  http_response_code(404);
                 echo json_encode(['status' => 'error', 'message' => 'Course bucket not found after update']);
