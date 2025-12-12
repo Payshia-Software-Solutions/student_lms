@@ -77,9 +77,9 @@ class CourseBucketContentController
     {
         $data = json_decode(file_get_contents('php://input'), true);
         if ($this->courseBucketContent->update($id, $data)) {
-            if ($this->courseBucketContent->getById($id)) {
-                $courseBucketContent_item = $this->buildContentItemResponse($this->courseBucketContent);
-                echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully', 'data' => $courseBucketContent_item]);
+            $record = $this->courseBucketContent->getById($id);
+            if ($record) {
+                echo json_encode(['status' => 'success', 'message' => 'Course bucket content updated successfully', 'data' => $record]);
             } else {
                  http_response_code(404);
                 echo json_encode(['status' => 'error', 'message' => 'Course bucket content not found after update']);
