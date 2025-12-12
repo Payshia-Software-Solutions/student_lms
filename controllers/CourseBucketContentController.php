@@ -77,7 +77,7 @@ class CourseBucketContentController
     {
         if (!isset($_POST['data'])) {
             http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Update data not provided in the 'data' field.']);
+            echo json_encode(['status' => 'error', 'message' => 'Update data not provided in the \'data\' field.']);
             return;
         }
 
@@ -98,8 +98,8 @@ class CourseBucketContentController
             $updatedRecord = $this->courseBucketContent->getById($id);
             if ($updatedRecord) {
                 echo json_encode([
-                    'status' => 'success', 
-                    'message' => 'Course bucket content updated successfully', 
+                    'status' => 'success',
+                    'message' => 'Course bucket content updated successfully',
                     'data' => $updatedRecord
                 ]);
             } else {
@@ -138,7 +138,7 @@ class CourseBucketContentController
             'created_at' => $content->created_at,
             'created_by' => $content->created_by,
             'updated_at' => $content->updated_at,
-            'updated_by' => $content->updated_by,
+            'updated_by' => $content->updated_by
         ];
     }
     
