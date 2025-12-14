@@ -56,10 +56,37 @@ class StudentPaymentCourseController
     public function createRecord()
     {
         $data = json_decode(file_get_contents('php://input'), true);
+
+        if (!empty($data['hash'])) {
+            $stmt = $this->paymentRequest->getByFilters(['hash' => $data['hash']]);
+            $existing_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($existing_records) > 0) {
+                $already_used = false;
+                $conflicting_record = null;
+                foreach ($existing_records as $record) {
+                    if ($record['request_status'] === 'approved') {
+                        $already_used = true;
+                        $conflicting_record = $record;
+                        break;
+                    }
+                }
+
+                if ($already_used) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'This payment slip (hash) has already been used for an approved payment.',
+                        'data' => $conflicting_record
+                    ]);
+                    return;
+                }
+            }
+        }
+
         $newId = $this->studentPaymentCourse->create($data);
 
         if ($newId) {
-            // If a payment_request_id is provided, update its status to 'approved'
             if (!empty($data['payment_request_id'])) {
                 $this->paymentRequest->update($data['payment_request_id'], ['request_status' => 'approved']);
             }
