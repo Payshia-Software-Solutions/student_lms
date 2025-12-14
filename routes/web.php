@@ -13,6 +13,8 @@ require_once __DIR__ . '/../models/UserFullDetails.php';
 require_once __DIR__ . '/../models/StudentPaymentCourse.php';
 require_once __DIR__ . '/../models/District.php';
 require_once __DIR__ . '/../models/City.php';
+require_once __DIR__ . '/../models/Bank.php';
+require_once __DIR__ . '/../models/BankBranch.php';
 
 // Instantiate DB & connect
 $database = new Database();
@@ -86,6 +88,8 @@ $StudentOrderRoutes = require_once __DIR__ . '/StudentOrderRoutes.php';
 $UserFullDetailsRoutes = require_once __DIR__ . '/UserFullDetailsRoutes.php';
 $DistrictRoutes = require_once __DIR__ . '/DistrictRoutes.php';
 $CityRoutes = require_once __DIR__ . '/CityRoutes.php';
+$BankRoutes = require_once __DIR__ . '/BankRoutes.php';
+$BankBranchRoutes = require_once __DIR__ . '/BankBranchRoutes.php';
 
 
 
@@ -96,6 +100,8 @@ UserFullDetails::createTable($GLOBALS['pdo']);
 StudentPaymentCourse::createTable($GLOBALS['pdo']);
 District::createTable($GLOBALS['pdo']);
 City::createTable($GLOBALS['pdo']);
+Bank::createTable($GLOBALS['pdo']);
+BankBranch::createTable($GLOBALS['pdo']);
 
 // Combine all routes
 $routes = array_merge(
@@ -117,6 +123,8 @@ $routes = array_merge(
     $UserFullDetailsRoutes,
     $DistrictRoutes,
     $CityRoutes,
+    $BankRoutes,
+    $BankBranchRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
