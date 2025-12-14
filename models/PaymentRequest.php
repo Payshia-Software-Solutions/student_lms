@@ -112,6 +112,11 @@ class PaymentRequest
             $params[':ref_id'] = $filters['ref_id'];
         }
 
+        if (isset($filters['hash'])) {
+            $query .= " AND pr.hash = :hash";
+            $params[':hash'] = $filters['hash'];
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute($params);
         return $stmt;
