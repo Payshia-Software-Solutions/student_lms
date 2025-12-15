@@ -16,7 +16,7 @@ class StudentPaymentCourse
     public $course_name;
     public $course_bucket_name;
 
-    // Constructor
+    // Constructor with DB
     public function __construct($db)
     {
         $this->conn = $db;
@@ -25,26 +25,9 @@ class StudentPaymentCourse
     // Create table
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS student_payment_course (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            course_id INT NOT NULL,
-            course_bucket_id INT NOT NULL,
-            student_number VARCHAR(50) NOT NULL,
-            payment_request_id INT NOT NULL,
-            payment_amount DECIMAL(10,2) NOT NULL,
-            discount_amount DECIMAL(10,2) DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (course_id) REFERENCES courses(id),
-            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id),
-            FOREIGN KEY (student_number) REFERENCES users(student_number)
-        )";
-
-        try {
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Table Creation Error: " . $e->getMessage());
-        }
+        $query = "CREATE TABLE IF NOT EXISTS student_payment_course (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            course_id INT NOT NULL,\n            course_bucket_id INT NOT NULL,\n            student_number VARCHAR(255) NOT NULL,\n            payment_request_id INT,\n            payment_amount DECIMAL(10, 2) NOT NULL,\n            discount_amount DECIMAL(10, 2) DEFAULT 0,\n            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            FOREIGN KEY (course_id) REFERENCES courses(id),\n            FOREIGN KEY (course_bucket_id) REFERENCES course_bucket(id),\n            FOREIGN KEY (student_number) REFERENCES users(student_number)\n        )";
+        $stmt = $db->prepare($query);
+        $stmt->execute();
     }
 
     // Create a new record
@@ -91,7 +74,8 @@ class StudentPaymentCourse
         $query = "SELECT
                     spc.*,
                     c.course_name AS course_name,
-                    cb.name AS course_bucket_name
+                    cb.name AS course_bucket_name,
+                    cb.price AS course_bucket_price
                 FROM
                     student_payment_course spc
                 LEFT JOIN
@@ -121,7 +105,7 @@ class StudentPaymentCourse
         return $stmt;
     }
 
-    // Get a single record by ID
+    // Get single record by ID
     public function getById($id)
     {
         $query = "SELECT
@@ -134,14 +118,13 @@ class StudentPaymentCourse
                     courses c ON spc.course_id = c.id
                 LEFT JOIN
                     course_bucket cb ON spc.course_bucket_id = cb.id
-                WHERE spc.id = ?";
+                WHERE spc.id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if($row) {
+        if ($row) {
             $this->id = $row['id'];
             $this->course_id = $row['course_id'];
             $this->course_bucket_id = $row['course_bucket_id'];
@@ -160,19 +143,21 @@ class StudentPaymentCourse
     // Update a record
     public function update($id, $data)
     {
-        $query = "UPDATE student_payment_course SET course_id = :course_id, course_bucket_id = :course_bucket_id, student_number = :student_number, payment_request_id = :payment_request_id, payment_amount = :payment_amount, discount_amount = :discount_amount WHERE id = :id";
+        $fields = [];
+        $params = [':id' => $id];
+        foreach ($data as $key => $value) {
+            $fields[] = "`$key` = :$key";
+            $params[":$key"] = $value;
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $query = "UPDATE student_payment_course SET " . implode(', ', $fields) . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
-
-        // Sanitize and bind parameters
-        $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':course_id', $data['course_id']);
-        $stmt->bindParam(':course_bucket_id', $data['course_bucket_id']);
-        $stmt->bindParam(':student_number', $data['student_number']);
-        $stmt->bindParam(':payment_request_id', $data['payment_request_id']);
-        $stmt->bindParam(':payment_amount', $data['payment_amount']);
-        $stmt->bindParam(':discount_amount', $data['discount_amount']);
-
-        if ($stmt->execute()) {
+        
+        if ($stmt->execute($params)) {
             return true;
         }
         return false;
