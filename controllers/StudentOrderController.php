@@ -1,4 +1,3 @@
-
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
@@ -52,6 +51,10 @@ class StudentOrderController
         try {
             $this->db->beginTransaction();
 
+            $data = json_decode($_POST['data'], true);
+            $studentOrderDataFromPost = $data['student_order_data'];
+            $paymentRequestDataFromPost = $data['payment_request_data'];
+
             // --- Handle Payment Slip IF it exists ---
             if (isset($_FILES['payment_slip']) && $_FILES['payment_slip']['error'] == 0) {
                 // FTP Config and Connection
@@ -87,10 +90,13 @@ class StudentOrderController
 
                 // Create Payment Request
                 $paymentRequestData = [
-                    'student_number' => $_POST['student_number'],
+                    'student_number' => $paymentRequestDataFromPost['student_number'],
                     'request_status' => 'pending',
-                    'amount' => $_POST['final_price'],
-                    'image_hash' => $image_hash
+                    'amount' => $paymentRequestDataFromPost['payment_amount'],
+                    'image_hash' => $image_hash,
+                    'bank' => $paymentRequestDataFromPost['bank'],
+                    'branch' => $paymentRequestDataFromPost['branch'],
+                    'ref' => $paymentRequestDataFromPost['ref']
                 ];
                 $newPaymentRequestId = $this->paymentRequest->create($paymentRequestData);
                 if (!$newPaymentRequestId) {
@@ -113,21 +119,14 @@ class StudentOrderController
             }
 
             // --- Create Student Order (Always runs) ---
-            $orderData = [
-                'student_number' => $_POST['student_number'],
-                'payment_request_id' => $payment_request_id,
-                'total_order_price' => $_POST['total_order_price'],
-                'total_discount' => $_POST['total_discount'],
-                'final_price' => $_POST['final_price']
-            ];
-            $newOrderId = $this->studentOrder->create($orderData);
+            $newOrderId = $this->studentOrder->create($studentOrderDataFromPost);
             if (!$newOrderId) {
                 throw new Exception("Unable to create student order.");
             }
 
             $this->db->commit();
 
-            $createdOrder = $this->studentOrder->getById($newOrderId);
+            $createdOrder = $this->studentOrder->read_single($newOrderId);
             http_response_code(201);
             echo json_encode(['status' => 'success', 'message' => 'Order created successfully', 'data' => $createdOrder]);
 
