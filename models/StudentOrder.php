@@ -58,6 +58,11 @@ class StudentOrder
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getByFilters($filters)
+    {
+        return $this->getFiltered($filters);
+    }
+
     public function getFiltered($filters)
     {
         $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
