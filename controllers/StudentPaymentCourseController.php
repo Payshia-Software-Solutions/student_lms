@@ -53,6 +53,39 @@ class StudentPaymentCourseController
         }
     }
 
+    public function getPaymentBalance()
+    {
+        $filters = $_GET;
+        $stmt = $this->studentPaymentCourse->getByFilters($filters);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($records) > 0) {
+            $total_paid = 0;
+            $course_bucket_price = $records[0]['course_bucket_price'];
+            $course_name = $records[0]['course_name'];
+            $course_bucket_name = $records[0]['course_bucket_name'];
+
+            foreach ($records as $record) {
+                $total_paid += $record['payment_amount'];
+            }
+
+            $balance = $course_bucket_price - $total_paid;
+
+            $response = [
+                'course' => $course_name,
+                'course_bucket' => $course_bucket_name,
+                'course_bucket_price' => $course_bucket_price,
+                'total_pay_amount' => $total_paid,
+                'balance' => $balance
+            ];
+
+            echo json_encode(['status' => 'success', 'data' => $response]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'No payment records found for the specified criteria.']);
+        }
+    }
+
     public function createRecord()
     {
         $data = json_decode(file_get_contents('php://input'), true);

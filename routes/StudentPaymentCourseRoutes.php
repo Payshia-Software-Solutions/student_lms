@@ -30,6 +30,14 @@ return [
         'auth' => 'private'
     ],
 
+    // Get payment balance for a student - Private (JWT)
+    'GET /student-payment-courses/balance/' => [
+        'handler' => function () use ($studentPaymentCourseController) {
+            $studentPaymentCourseController->getPaymentBalance();
+        },
+        'auth' => 'private'
+    ],
+
     // Get a student payment course by ID - Private (JWT)
     'GET /student-payment-courses/{id}/' => [
         'handler' => function ($id) use ($studentPaymentCourseController) {
