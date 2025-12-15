@@ -2,13 +2,11 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
-require_once __DIR__ . '/../models/StudentOrderDetails.php';
 require_once __DIR__ . '/../models/PaymentRequest.php';
 
 class StudentOrderController
 {
     private $studentOrder;
-    private $studentOrderDetail;
     private $paymentRequest;
     private $db;
     private $ftp_config;
@@ -18,7 +16,6 @@ class StudentOrderController
         $this->db = $pdo;
         $this->ftp_config = $ftp_config;
         $this->studentOrder = new StudentOrder($this->db);
-        $this->studentOrderDetail = new StudentOrderDetail($this->db);
         $this->paymentRequest = new PaymentRequest($this->db);
     }
 
@@ -122,19 +119,6 @@ class StudentOrderController
             $newOrderId = $this->studentOrder->create($orderData);
             if (!$newOrderId) {
                 throw new Exception("Unable to create student order.");
-            }
-
-            // --- Create Student Order Details (Always runs) ---
-            $order_details = json_decode($_POST['order_details'], true);
-            foreach ($order_details as $item) {
-                $detailData = [
-                    'student_order_id' => $newOrderId,
-                    'course_id' => $item['course_id'],
-                    'course_bucket_id' => $item['course_bucket_id']
-                ];
-                if (!$this->studentOrderDetail->create($detailData)) {
-                    throw new Exception("Unable to create student order detail.");
-                }
             }
 
             $this->db->commit();
