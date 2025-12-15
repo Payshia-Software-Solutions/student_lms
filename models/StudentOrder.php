@@ -65,6 +65,9 @@ class StudentOrder
 
     public function getFiltered($filters)
     {
+        // --- DEBUG LINE --- IF YOU SEE THIS, THE NEW FILE IS WORKING.
+        die("DEBUG: The new getFiltered function in StudentOrder.php is being executed.");
+
         $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
                   LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id WHERE 1=1';
 
@@ -97,7 +100,7 @@ class StudentOrder
         }
 
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getLatestByStudentNumber($student_number)
