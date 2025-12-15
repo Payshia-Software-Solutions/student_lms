@@ -82,28 +82,20 @@ class StudentOrderController
                 $image_content = file_get_contents($file['tmp_name']);
                 $image_hash = hash('sha256', $image_content);
 
-                /*
-                // Duplicate Check
-                $stmt = $this->paymentRequest->getByFilters(['image_hash' => $image_hash, 'request_status' => 'approved']);
-                $existing_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if (count($existing_records) > 0) {
-                    $conflicting_records_json = json_encode($existing_records);
-                    $errorMessage = "This payment slip has already been used for an approved payment. The hash of the uploaded image is: {$image_hash}. Conflicting records: {$conflicting_records_json}";
-                    throw new Exception($errorMessage);
-                }
-                */
+                // Check if the payment is for a study pack
+                $isStudyPackPayment = isset($paymentRequestDataFromPost['payment_status']) && $paymentRequestDataFromPost['payment_status'] === 'study_pack';
 
                 // Create Payment Request
                 $paymentRequestData = [
                     'student_number' => $paymentRequestDataFromPost['student_number'],
-                    'slip_url' => 'temp', // Temporary value to satisfy NOT NULL constraint
+                    'slip_url' => 'temp', // Temporary value
                     'payment_amount' => $paymentRequestDataFromPost['payment_amount'],
                     'hash' => $image_hash,
                     'bank' => $paymentRequestDataFromPost['bank'],
                     'branch' => $paymentRequestDataFromPost['branch'],
-                    'ref' => $paymentRequestDataFromPost['ref'],
-                    'ref_id' => $paymentRequestDataFromPost['ref_id'],
-                    'request_status' => 'pending', // Enforced by controller
+                    'ref' => $isStudyPackPayment ? 'student_order' : $paymentRequestDataFromPost['ref'],
+                    'ref_id' => $isStudyPackPayment ? null : $paymentRequestDataFromPost['ref_id'], // Set ref_id to null for now if it's a study pack
+                    'request_status' => 'pending',
                     'payment_status' => $paymentRequestDataFromPost['payment_status'],
                     'course_id' => $paymentRequestDataFromPost['course_id'],
                     'course_bucket_id' => $paymentRequestDataFromPost['course_bucket_id']
@@ -129,10 +121,17 @@ class StudentOrderController
             }
 
             // --- Create Student Order (Always runs) ---
-            $studentOrderDataFromPost['payment_request_id'] = $payment_request_id; // Add the new payment_request_id
+            $studentOrderDataFromPost['payment_request_id'] = $payment_request_id;
             $newOrderId = $this->studentOrder->create($studentOrderDataFromPost);
             if (!$newOrderId) {
                 throw new Exception("Unable to create student order.");
+            }
+
+            // --- Link payment to the new order ID if it's a study pack payment ---
+            if (isset($isStudyPackPayment) && $isStudyPackPayment) {
+                if (!$this->paymentRequest->update($payment_request_id, ['ref_id' => $newOrderId])) {
+                    throw new Exception("Unable to link payment request to the new order.");
+                }
             }
 
             $this->db->commit();
