@@ -89,7 +89,7 @@ $UserFullDetailsRoutes = require_once __DIR__ . '/UserFullDetailsRoutes.php';
 $DistrictRoutes = require_once __DIR__ . '/DistrictRoutes.php';
 $CityRoutes = require_once __DIR__ . '/CityRoutes.php';
 $BankRoutes = require_once __DIR__ . '/BankRoutes.php';
-$BankBranchRoutes = require_once __DIR__ . '/BankBranchRoutes.php'; 
+$BankBranchRoutes = require_once __DIR__ . '/BankBranchRoutes.php';
 $DuplicateCheckRoutes = require_once __DIR__ . '/DuplicateCheckRoutes.php';
 
 
@@ -126,7 +126,7 @@ $routes = array_merge(
     $CityRoutes,
     $BankRoutes,
     $BankBranchRoutes,
-    $DuplicateCheckRoutes
+    $DuplicateCheckRoutes,
     [
         'GET /ping/' => [
             'handler' => function () {
