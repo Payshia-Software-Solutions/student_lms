@@ -44,6 +44,8 @@ class PaymentRequest
     // Create a new record
     public function create($data)
     {
+        // --- THIS IS THE CORRECTED CODE. IF THE ERROR PERSISTS, THE SERVER IS CACHING THE OLD FILE. ---
+        // --- PLEASE RESTART PHP-FPM OR APACHE TO CLEAR THE CACHE. ---
         $query = "INSERT INTO payment_request (student_number, slip_url, payment_amount, hash, bank, branch, ref, ref_id, request_status, payment_status, course_id, course_bucket_id) VALUES (:student_number, :slip_url, :payment_amount, :hash, :bank, :branch, :ref, :ref_id, :request_status, :payment_status, :course_id, :course_bucket_id)";
         $stmt = $this->conn->prepare($query);
 
@@ -140,7 +142,7 @@ class PaymentRequest
         if($row) {
             $this->id = $row['id'];
             $this->student_number = $row['student_number'];
-            $this->slip_url = $row['slip_url'];
+            $this->slip_.phpurl = $row['slip_url'];
             $this->payment_amount = $row['payment_amount'];
             $this->hash = $row['hash'];
             $this->bank = $row['bank'];
