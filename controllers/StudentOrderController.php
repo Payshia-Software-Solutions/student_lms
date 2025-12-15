@@ -2,7 +2,7 @@
 <?php
 
 require_once __DIR__ . '/../models/StudentOrder.php';
-require_once __DIR__ . '/../models/StudentOrderDetail.php';
+require_once __DIR__ . '/../models/StudentOrderDetails.php';
 require_once __DIR__ . '/../models/PaymentRequest.php';
 
 class StudentOrderController
