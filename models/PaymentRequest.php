@@ -117,6 +117,11 @@ class PaymentRequest
             $params[':hash'] = $filters['hash'];
         }
 
+        if (isset($filters['not_id'])) {
+            $query .= " AND pr.id != :not_id";
+            $params[':not_id'] = $filters['not_id'];
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute($params);
         return $stmt;
