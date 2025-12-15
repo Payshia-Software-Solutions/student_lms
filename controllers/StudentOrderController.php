@@ -78,7 +78,9 @@ class StudentOrderController
                 $stmt = $this->paymentRequest->getByFilters(['image_hash' => $image_hash, 'request_status' => 'approved']);
                 $existing_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 if (count($existing_records) > 0) {
-                    throw new Exception("This payment slip has already been used for an approved payment.");
+                    $conflicting_records_json = json_encode($existing_records);
+                    $errorMessage = "This payment slip has already been used for an approved payment. The hash of the uploaded image is: {$image_hash}. Conflicting records: {$conflicting_records_json}";
+                    throw new Exception($errorMessage);
                 }
 
                 // Create Payment Request
