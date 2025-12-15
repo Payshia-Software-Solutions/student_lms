@@ -91,12 +91,17 @@ class StudentOrderController
                 // Create Payment Request
                 $paymentRequestData = [
                     'student_number' => $paymentRequestDataFromPost['student_number'],
-                    'request_status' => 'pending',
-                    'amount' => $paymentRequestDataFromPost['payment_amount'],
-                    'image_hash' => $image_hash,
+                    'slip_url' => 'temp', // Temporary value to satisfy NOT NULL constraint
+                    'payment_amount' => $paymentRequestDataFromPost['payment_amount'],
+                    'hash' => $image_hash,
                     'bank' => $paymentRequestDataFromPost['bank'],
                     'branch' => $paymentRequestDataFromPost['branch'],
-                    'ref' => $paymentRequestDataFromPost['ref']
+                    'ref' => $paymentRequestDataFromPost['ref'],
+                    'ref_id' => $paymentRequestDataFromPost['ref_id'],
+                    'request_status' => 'pending', // Enforced by controller
+                    'payment_status' => $paymentRequestDataFromPost['payment_status'],
+                    'course_id' => $paymentRequestDataFromPost['course_id'],
+                    'course_bucket_id' => $paymentRequestDataFromPost['course_bucket_id']
                 ];
                 $newPaymentRequestId = $this->paymentRequest->create($paymentRequestData);
                 if (!$newPaymentRequestId) {
@@ -119,6 +124,7 @@ class StudentOrderController
             }
 
             // --- Create Student Order (Always runs) ---
+            $studentOrderDataFromPost['payment_request_id'] = $payment_request_id; // Add the new payment_request_id
             $newOrderId = $this->studentOrder->create($studentOrderDataFromPost);
             if (!$newOrderId) {
                 throw new Exception("Unable to create student order.");
