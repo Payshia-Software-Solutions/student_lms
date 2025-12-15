@@ -75,7 +75,7 @@ class StudentPaymentCourse
                     spc.*,
                     c.course_name AS course_name,
                     cb.name AS course_bucket_name,
-                    cb.price AS course_bucket_price
+                    cb.payment_amount AS course_bucket_price
                 FROM
                     student_payment_course spc
                 LEFT JOIN
