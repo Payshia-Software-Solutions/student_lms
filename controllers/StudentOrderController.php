@@ -53,10 +53,15 @@ class StudentOrderController
 
             $data = json_decode($_POST['data'], true);
             $studentOrderDataFromPost = $data['student_order_data'];
-            $paymentRequestDataFromPost = $data['payment_request_data'];
 
             // --- Handle Payment Slip IF it exists ---
             if (isset($_FILES['payment_slip']) && $_FILES['payment_slip']['error'] == 0) {
+
+                if (!isset($data['payment_request_data'])) {
+                    throw new Exception("Payment slip was uploaded, but payment_request_data was not provided.");
+                }
+                $paymentRequestDataFromPost = $data['payment_request_data'];
+
                 // FTP Config and Connection
                 $ftp_server = $this->ftp_config['server'];
                 $ftp_user = $this->ftp_config['username'];
