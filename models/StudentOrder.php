@@ -31,7 +31,27 @@ class StudentOrder
 
     public static function createTable($db)
     {
-        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (\n            `id` INT AUTO_INCREMENT PRIMARY KEY,\n            `student_number` VARCHAR(50) NOT NULL,\n            `orderable_item_id` INT NOT NULL,\n            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',\n            `address_line_1` VARCHAR(255) NOT NULL,\n            `address_line_2` VARCHAR(255) DEFAULT NULL,\n            `city` VARCHAR(100) NOT NULL,\n            `district` VARCHAR(100) NOT NULL,\n            `postal_code` VARCHAR(20) NOT NULL,\n            `phone_number_1` VARCHAR(20) NOT NULL,\n            `phone_number_2` VARCHAR(20) DEFAULT NULL,\n            `tracking_number` VARCHAR(50) DEFAULT NULL,\n            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,\n            `package_weight` DECIMAL(10, 2) DEFAULT NULL,\n            `order_date` DATE DEFAULT NULL,\n            `delivery_date` DATE DEFAULT NULL,\n            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)\n        );";
+        $query = "CREATE TABLE IF NOT EXISTS `student_order_table` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `student_number` VARCHAR(50) NOT NULL,
+            `orderable_item_id` INT NOT NULL,
+            `order_status` VARCHAR(255) NOT NULL DEFAULT 'pending',
+            `address_line_1` VARCHAR(255) NOT NULL,
+            `address_line_2` VARCHAR(255) DEFAULT NULL,
+            `city` VARCHAR(100) NOT NULL,
+            `district` VARCHAR(100) NOT NULL,
+            `postal_code` VARCHAR(20) NOT NULL,
+            `phone_number_1` VARCHAR(20) NOT NULL,
+            `phone_number_2` VARCHAR(20) DEFAULT NULL,
+            `tracking_number` VARCHAR(50) DEFAULT NULL,
+            `cod_amount` DECIMAL(10, 2) DEFAULT NULL,
+            `package_weight` DECIMAL(10, 2) DEFAULT NULL,
+            `order_date` DATE DEFAULT NULL,
+            `delivery_date` DATE DEFAULT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (orderable_item_id) REFERENCES orderable_item(id)
+        );";
 
         try {
             $stmt = $db->prepare($query);
@@ -65,9 +85,6 @@ class StudentOrder
 
     public function getFiltered($filters)
     {
-        // --- DEBUG LINE --- IF YOU SEE THIS, THE NEW FILE IS WORKING.
-        die("DEBUG: The new getFiltered function in StudentOrder.php is being executed.");
-
         $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
                   LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id WHERE 1=1';
 
