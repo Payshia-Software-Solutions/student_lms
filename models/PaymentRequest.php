@@ -142,7 +142,7 @@ class PaymentRequest
         if($row) {
             $this->id = $row['id'];
             $this->student_number = $row['student_number'];
-            $this->slip_.phpurl = $row['slip_url'];
+            $this->slip_url = $row['slip_url'];
             $this->payment_amount = $row['payment_amount'];
             $this->hash = $row['hash'];
             $this->bank = $row['bank'];
