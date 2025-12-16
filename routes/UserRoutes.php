@@ -22,6 +22,11 @@ return [
         },
         'auth' => 'private'
     ],
+    // Get the count of users with the status 'student'
+    'GET /users/count/student' => [
+        'handler' => [$userController, 'getStudentCount'],
+        'auth' => 'private'
+    ],
     // Get a single user by ID
     'GET /users/{id}' => [
         'handler' => function ($params) use ($userController) {

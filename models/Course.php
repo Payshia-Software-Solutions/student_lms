@@ -96,6 +96,15 @@ class Course
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Get total count of courses
+    public function getTotalCount()
+    {
+        $query = "SELECT COUNT(*) as count FROM courses WHERE deleted_at IS NULL";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    }
+
     // Update a course dynamically
     public function update($id, $data)
     {

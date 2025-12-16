@@ -33,6 +33,13 @@ class User
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getCountByStatus($status)
+    {
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM users WHERE user_status = ? AND is_active = 1");
+        $stmt->execute([$status]);
+        return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    }
+
     public function getById($id)
     {
         $stmt = $this->pdo->prepare("SELECT id, f_name, l_name, email, nic, phone_number, user_status, student_number, company_id, is_active, created_at, updated_at FROM users WHERE id = ? AND is_active = 1");

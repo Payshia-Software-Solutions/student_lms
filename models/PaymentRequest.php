@@ -129,6 +129,16 @@ class PaymentRequest
         return $stmt;
     }
 
+    // Get count of payment requests by status
+    public function getCountByStatus($status)
+    {
+        $query = "SELECT COUNT(*) as count FROM payment_request WHERE request_status = :status";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':status', $status);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    }
+
     // Get a single record by ID
     public function getById($id)
     {

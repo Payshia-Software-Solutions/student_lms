@@ -34,6 +34,12 @@ class UserController
         }
     }
 
+    public function getStudentCount()
+    {
+        $count = $this->user->getCountByStatus('student');
+        echo json_encode(['status' => 'success', 'data' => ['count' => $count]]);
+    }
+
     public function getAllRecords()
     {
         $users = $this->user->getAll();
