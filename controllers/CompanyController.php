@@ -12,6 +12,18 @@ class CompanyController
         $this->db = $pdo;
         $this->company = new Company($this->db);
     }
+    
+    // --- NEW FUNCTION ---
+    public function getCompanyById()
+    {
+        if (isset($_GET['id'])) {
+            $id = $_GET['id'];
+            $this->getRecordById($id);
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Company ID is required."));
+        }
+    }
 
     public function createTable()
     {
