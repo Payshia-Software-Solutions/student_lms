@@ -32,6 +32,20 @@ class StudentOrderController
         echo json_encode(['status' => 'success', 'data' => $records]);
     }
 
+    public function getRecordsByCourseId($course_id)
+    {
+        $filters = ['course_id' => $course_id];
+        $records = $this->studentOrder->getByFilters($filters);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
+    public function getRecordsByCourseBucketId($bucket_id)
+    {
+        $filters = ['course_bucket_id' => $bucket_id];
+        $records = $this->studentOrder->getByFilters($filters);
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
     public function getRecordById($id)
     {
         $record = $this->studentOrder->getById($id);
