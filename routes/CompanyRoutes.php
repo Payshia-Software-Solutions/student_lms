@@ -19,12 +19,12 @@ return [
         'auth' => 'public'
     ],
     // Create a new company
-    'POST /company/create' => [
+    'POST /company/' => [
         'handler' => [$companyController, 'createRecord'],
         'auth' => 'private'
     ],
     // Update an existing company
-    'PUT /company/{id}/update' => [
+    'POST /company/{id}' => [
         'handler' => function ($id) use ($companyController) {
             $companyController->updateRecord($id);
         },
