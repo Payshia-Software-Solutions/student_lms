@@ -13,8 +13,8 @@ return [
     ],
     // Get a single company by ID
     'GET /company/{id}' => [
-        'handler' => function ($params) use ($companyController) {
-            $companyController->getRecordById($params['id']);
+        'handler' => function ($id) use ($companyController) {
+            $companyController->getRecordById($id);
         },
         'auth' => 'public'
     ],
@@ -25,15 +25,15 @@ return [
     ],
     // Update an existing company
     'PUT /company/{id}/update' => [
-        'handler' => function ($params) use ($companyController) {
-            $companyController->updateRecord($params['id']);
+        'handler' => function ($id) use ($companyController) {
+            $companyController->updateRecord($id);
         },
         'auth' => 'private'
     ],
     // Delete a company
     'DELETE /company/{id}/delete' => [
-        'handler' => function ($params) use ($companyController) {
-            $companyController->deleteRecord($params['id']);
+        'handler' => function ($id) use ($companyController) {
+            $companyController->deleteRecord($id);
         },
         'auth' => 'private'
     ],
