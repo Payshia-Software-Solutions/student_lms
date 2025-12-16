@@ -8,6 +8,8 @@
     include_once __DIR__ . '/../models/CourseBucketContent.php';
     include_once __DIR__ . '/../models/Enrollment.php';
     include_once __DIR__ . '/../controllers/AssignmentController.php';
+    // --- NEW: Include the StudentPaymentCourse model ---
+    include_once __DIR__ . '/../models/StudentPaymentCourse.php';
 
     class UserFullDetailsController
     {
@@ -19,6 +21,8 @@
         private $courseBucketContent;
         private $enrollment;
         private $assignmentController;
+        // --- NEW: Add property for the StudentPaymentCourse model ---
+        private $studentPaymentCourse;
 
         public function __construct($pdo)
         {
@@ -32,6 +36,8 @@
             $this->courseBucketContent = new CourseBucketContent($this->db);
             $this->enrollment = new Enrollment($this->db);
             $this->assignmentController = new AssignmentController($this->db, $ftp_config);
+            // --- NEW: Instantiate the StudentPaymentCourse model ---
+            $this->studentPaymentCourse = new StudentPaymentCourse($this->db);
         }
 
         public function getUserWithCourseDetails()
@@ -62,7 +68,34 @@
 
                                 $buckets = $this->courseBucket->getByCourseId($course_id);
                                 while ($bucket_row = $buckets->fetch(PDO::FETCH_ASSOC)) {
-                                    // CORRECT: Only add the bucket details, not the content within it.
+                                    // --- NEW: Calculate and add payment balance ---
+                                    $bucket_id = $bucket_row['id'];
+                                    // Assuming the price is in a field like 'payment_amount' or similar in the course_bucket table
+                                    $bucket_price = (float)($bucket_row['payment_amount'] ?? 0); 
+
+                                    $paymentFilters = [
+                                        'student_number' => $student_number,
+                                        'course_bucket_id' => $bucket_id
+                                    ];
+
+                                    $payments_stmt = $this->studentPaymentCourse->getByFilters($paymentFilters);
+                                    $payments = $payments_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    
+                                    $total_paid = 0;
+                                    if ($payments) {
+                                        $total_paid = array_sum(array_column($payments, 'payment_amount'));
+                                    }
+
+                                    $balance = $bucket_price - $total_paid;
+
+                                    $bucket_row['payment_details'] = [
+                                        'course_bucket_price' => $bucket_price,
+                                        'total_paid_amount' => $total_paid,
+                                        'balance' => $balance,
+                                        'payments' => $payments ?: []
+                                    ];
+                                    // --- End of new logic ---
+
                                     $courseDetails['buckets'][] = $bucket_row;
                                 }
                                 
@@ -85,7 +118,7 @@
             }
         }
 
-        // --- OTHER FUNCTIONS ---
+        // --- OTHER FUNCTIONS --- (Remain Unchanged)
 
         public function getAllRecords()
         {
