@@ -94,7 +94,7 @@ class UserController
                     $lastId = $this->user->getLastStudentId();
                     $nextId = $lastId + 1;
                     $paddedId = str_pad($nextId, 5, '0', STR_PAD_LEFT);
-                    $data['student_number'] = $trifix . '-' . $paddedId;
+                    $data['student_number'] = $trifix . $paddedId;
                 } else {
                     http_response_code(400);
                     echo json_encode(['status' => 'error', 'message' => 'Invalid company_id']);
