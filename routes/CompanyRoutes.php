@@ -7,7 +7,7 @@ $companyController = new CompanyController($pdo);
 
 return [
     // Get all companies
-    'GET /company/all' => [
+    'GET /company/' => [
         'handler' => [$companyController, 'getAllRecords'],
         'auth' => 'public'
     ],
