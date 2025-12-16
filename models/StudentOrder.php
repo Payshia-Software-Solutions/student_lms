@@ -63,7 +63,7 @@ class StudentOrder
 
     public function read()
     {
-        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id';
+        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id, c.course_name, cb.name as course_bucket_name FROM ' . $this->table . ' so LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id LEFT JOIN courses c ON oi.course_id = c.id LEFT JOIN course_bucket cb ON oi.course_bucket_id = cb.id';
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -71,7 +71,7 @@ class StudentOrder
 
     public function read_single($id)
     {
-        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id WHERE so.id = :id';
+        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id, c.course_name, cb.name as course_bucket_name FROM ' . $this->table . ' so LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id LEFT JOIN courses c ON oi.course_id = c.id LEFT JOIN course_bucket cb ON oi.course_bucket_id = cb.id WHERE so.id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -85,8 +85,8 @@ class StudentOrder
 
     public function getFiltered($filters)
     {
-        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
-                  LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id WHERE 1=1';
+        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id, c.course_name, cb.name as course_bucket_name FROM ' . $this->table . ' so 
+                  LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id LEFT JOIN courses c ON oi.course_id = c.id LEFT JOIN course_bucket cb ON oi.course_bucket_id = cb.id WHERE 1=1';
 
         if (!empty($filters['course_id'])) {
             $query .= ' AND oi.course_id = :course_id';
@@ -122,8 +122,8 @@ class StudentOrder
 
     public function getLatestByStudentNumber($student_number)
     {
-        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id FROM ' . $this->table . ' so 
-                  LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id 
+        $query = 'SELECT so.*, oi.name as item_name, oi.price, oi.course_id, oi.course_bucket_id, c.course_name, cb.name as course_bucket_name FROM ' . $this->table . ' so 
+                  LEFT JOIN orderable_item oi ON so.orderable_item_id = oi.id LEFT JOIN courses c ON oi.course_id = c.id LEFT JOIN course_bucket cb ON oi.course_bucket_id = cb.id 
                   WHERE so.student_number = :student_number 
                   ORDER BY so.created_at DESC 
                   LIMIT 1';
