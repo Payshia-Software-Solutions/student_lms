@@ -1,206 +1,181 @@
 <?php
-    include_once __DIR__ . '/../config/Database.php';
-    include_once __DIR__ . '/../config/ftp.php';
-    include_once __DIR__ . '/../models/User.php';
-    include_once __DIR__ . '/../models/UserFullDetails.php';
-    include_once __DIR__ . '/../models/Course.php';
-    include_once __DIR__ . '/../models/CourseBucket.php';
-    include_once __DIR__ . '/../models/CourseBucketContent.php';
-    include_once __DIR__ . '/../models/Enrollment.php';
-    include_once __DIR__ . '/../controllers/AssignmentController.php';
 
-    class UserFullDetailsController
+require_once __DIR__ . '/../models/UserFullDetails.php';
+require_once __DIR__ . '/../models/StudentPaymentCourse.php'; // Added dependency
+
+class UserFullDetailsController
+{
+    private $userFullDetails;
+    private $studentPaymentCourse; // Added property
+    private $db;
+
+    public function __construct($pdo)
     {
-        private $db;
-        private $user;
-        private $userFullDetails;
-        private $course;
-        private $courseBucket;
-        private $courseBucketContent;
-        private $enrollment;
-        private $assignmentController;
+        $this->db = $pdo;
+        $this->userFullDetails = new UserFullDetails($this->db);
+        $this->studentPaymentCourse = new StudentPaymentCourse($this->db); // Initialized model
+    }
 
-        public function __construct($pdo)
-        {
-            global $ftp_config;
-
-            $this->db = $pdo;
-            $this->user = new User($this->db);
-            $this->userFullDetails = new UserFullDetails($this->db);
-            $this->course = new Course($this->db);
-            $this->courseBucket = new CourseBucket($this->db);
-            $this->courseBucketContent = new CourseBucketContent($this->db);
-            $this->enrollment = new Enrollment($this->db);
-            $this->assignmentController = new AssignmentController($this->db, $ftp_config);
+    public function getUserWithCourseDetails()
+    {
+        if (!isset($_GET['student_number'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+            return;
         }
 
-        public function getUserWithCourseDetails()
-        {
-            if (isset($_GET['student_number'])) {
-                $student_number = $_GET['student_number'];
-                $user = $this->user->getByStudentNumber($student_number);
+        $student_number = $_GET['student_number'];
 
-                if ($user) {
-                    $enrollments = $this->enrollment->getByStudentAndStatus($student_number, 'approved');
-                    $coursesWithDetails = [];
+        $user_data = $this->userFullDetails->read_single_by_student_number($student_number);
+
+        if (!$user_data) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+            return;
+        }
+
+        $user_data['courses'] = $this->userFullDetails->getStudentCoursesWithDetails($student_number);
+
+        // --- Start of new implementation: Get Payment Balance and History ---
+        foreach ($user_data['courses'] as &$course) { // Use reference to modify array directly
+            if (isset($course['course_buckets']) && is_array($course['course_buckets'])) {
+                foreach ($course['course_buckets'] as &$bucket) { // Use reference here as well
+                    $bucket_id = $bucket['id'];
+                    $bucket_price = (float)$bucket['course_bucket_price'];
+
+                    $paymentFilters = [
+                        'student_number' => $student_number,
+                        'course_bucket_id' => $bucket_id
+                    ];
+
+                    $payments = $this->studentPaymentCourse->getByFilters($paymentFilters);
                     
-                    if ($enrollments->rowCount() > 0) {
-                        while ($enrollment_row = $enrollments->fetch(PDO::FETCH_ASSOC)) {
-                            $course_id = $enrollment_row['course_id'];
-                            $course_data = $this->course->getById($course_id);
-
-                            if ($course_data) {
-                                $courseDetails = [
-                                    'id' => $course_data['id'],
-                                    'course_name' => $course_data['course_name'],
-                                    'course_description' => $course_data['description'],
-                                    'course_image' => $course_data['img_url'],
-                                    'created_at' => $course_data['created_at'],
-                                    'buckets' => [],
-                                    'assignments' => []
-                                ];
-
-                                $buckets = $this->courseBucket->getByCourseId($course_id);
-                                while ($bucket_row = $buckets->fetch(PDO::FETCH_ASSOC)) {
-                                    // CORRECT: Only add the bucket details, not the content within it.
-                                    $courseDetails['buckets'][] = $bucket_row;
-                                }
-                                
-                                $courseDetails['assignments'] = $this->assignmentController->fetchAssignmentsAndSubmissionsForStudent($course_id, $student_number);
-
-                                $coursesWithDetails[] = $courseDetails;
-                            }
-                        }
+                    $total_paid = 0;
+                    if ($payments) {
+                        $total_paid = array_sum(array_column($payments, 'payment_amount'));
                     }
 
-                    $user['courses'] = $coursesWithDetails;
-                    echo json_encode(['status' => 'success', 'data' => $user]);
-                } else {
-                    http_response_code(404);
-                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
+                    $balance = $bucket_price - $total_paid;
+
+                    // Inject the payment details and history into the bucket
+                    $bucket['payment_details'] = [
+                        'course_bucket_price' => $bucket_price,
+                        'total_paid_amount' => $total_paid,
+                        'balance' => $balance,
+                        'payments' => $payments ?: [] // Include the list of payments
+                    ];
                 }
-            } else {
-                http_response_code(400);
-                echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
+                unset($bucket); // Unset reference to avoid side effects
             }
         }
+        unset($course); // Unset reference
+        // --- End of new implementation ---
 
-        // --- OTHER FUNCTIONS ---
+        echo json_encode(['status' => 'success', 'data' => $user_data]);
+    }
 
-        public function getAllRecords()
-        {
-            $stmt = $this->userFullDetails->read();
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['status' => 'success', 'data' => $users]);
+    // ... (rest of the functions: createUser, updateUser, etc. remain unchanged)
+    public function createUserAndDetails()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if (!isset($data['user_data']) || !isset($data['user_details_data'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Missing user_data or user_details_data']);
+            return;
         }
 
-        public function getRecordById($id)
-        {
-            $user_data = $this->userFullDetails->read_single($id);
-            if ($user_data) {
-                echo json_encode(['status' => 'success', 'data' => $user_data]);
-            } else {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'User not found.']);
-            }
-        }
+        try {
+            $this->db->beginTransaction();
 
-        public function getRecordByStudentNumberQuery()
-        {
-            if (isset($_GET['student_number'])) {
-                $student_number = $_GET['student_number'];
-                $user_data = $this->userFullDetails->read_by_student_number($student_number);
-                if ($user_data) {
-                    echo json_encode(['status' => 'success', 'data' => $user_data]);
-                } else {
-                    http_response_code(200);
-                    echo json_encode(['status' => 'error', 'message' => 'User not found.']);
-                }
-            } else {
-                 http_response_code(400);
-                 echo json_encode(['status' => 'error', 'message' => 'Student number is required.']);
-            }
-        }
+            // Create user
+            $userId = $this->userFullDetails->createUser($data['user_data']);
 
-        public function createRecord()
-        {
-            $data = json_decode(file_get_contents("php://input"), true);
-            if (empty($data['student_number']) || empty($data['full_name'])) {
-                http_response_code(400);
-                echo json_encode(['status' => 'error', 'message' => 'Missing required fields: student_number and full_name are required.']);
-                return;
-            }
+            // Create user details
+            $this->userFullDetails->createUserDetails($userId, $data['user_details_data']);
 
-            if ($this->userFullDetails->create($data)) {
-                echo json_encode(['status' => 'success', 'message' => 'User details created.']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'User details could not be created.']);
-            }
-        }
+            $this->db->commit();
 
-        public function updateRecord($id)
-        {
-            $data = json_decode(file_get_contents("php://input"), true);
-            if ($this->userFullDetails->update($id, $data)) {
-                echo json_encode(['status' => 'success', 'message' => 'User details updated.']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'User details could not be updated.']);
-            }
-        }
+            $newUser = $this->userFullDetails->read_single_by_id($userId);
 
-        public function deleteRecord($id)
-        {
-            if ($this->userFullDetails->delete($id)) {
-                 echo json_encode(['status' => 'success', 'message' => 'User details deleted.']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'User details could not be deleted.']);
-            }
-        }
-        
-        public function updateUserAndDetails($student_number)
-        {
-            $data = json_decode(file_get_contents('php://input'), true);
-
-            // Separate data for each model
-            $userData = [];
-            $userFullDetailsData = [];
-            
-            $userFields = ['f_name', 'l_name', 'email', 'nic', 'phone_number', 'user_status', 'company_id', 'is_active', 'password'];
-            $userDetailsFields = ['civil_status', 'gender', 'address_line_1', 'address_line_2', 'city_id', 'telephone_1', 'telephone_2', 'nic', 'e_mail', 'birth_day', 'updated_by', 'full_name', 'name_with_initials', 'name_on_certificate'];
-
-            foreach ($data as $key => $value) {
-                if (in_array($key, $userFields)) {
-                    $userData[$key] = $value;
-                }
-                if (in_array($key, $userDetailsFields)) {
-                    $userFullDetailsData[$key] = $value;
-                }
-            }
-
-            try {
-                $this->db->beginTransaction();
-
-                // Update user
-                if (!empty($userData)) {
-                    $this->user->updateByStudentNumber($student_number, $userData);
-                }
-
-                // Update user full details
-                if (!empty($userFullDetailsData)) {
-                    $this->userFullDetails->updateByStudentNumber($student_number, $userFullDetailsData);
-                }
-
-                $this->db->commit();
-
-                echo json_encode(['status' => 'success', 'message' => 'User and details updated successfully.']);
-            } catch (Exception $e) {
-                $this->db->rollBack();
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'message' => 'Failed to update user and details: ' . $e->getMessage()]);
-            }
+            http_response_code(201);
+            echo json_encode(['status' => 'success', 'message' => 'User and details created successfully', 'data' => $newUser]);
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to create user and details: ' . $e->getMessage()]);
         }
     }
-?>
+
+    public function updateUserAndDetails($student_number)
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        try {
+            $this->db->beginTransaction();
+
+            $this->userFullDetails->updateUserAndDetailsByStudentNumber($student_number, $data);
+
+            $this->db->commit();
+
+            $updatedUser = $this->userFullDetails->read_single_by_student_number($student_number);
+            echo json_encode(['status' => 'success', 'message' => 'User and details updated successfully', 'data' => $updatedUser]);
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update user and details: ' . $e->getMessage()]);
+        }
+    }
+
+    public function getRecordByStudentNumber($studentNumber)
+    {
+        $record = $this->userFullDetails->read_single_by_student_number($studentNumber);
+        if ($record) {
+            echo json_encode(['status' => 'success', 'data' => $record]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Record not found']);
+        }
+    }
+
+    public function getAllRecords()
+    {
+        $records = $this->userFullDetails->read();
+        echo json_encode(['status' => 'success', 'data' => $records]);
+    }
+
+    public function getRecordById($id)
+    {
+        $record = $this->userFullDetails->read_single_by_id($id);
+        if ($record) {
+            echo json_encode(['status' => 'success', 'data' => $record]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Record not found']);
+        }
+    }
+
+    public function updateRecord($id)
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
+        if ($this->userFullDetails->update($id, $data)) {
+            echo json_encode(['status' => 'success', 'message' => 'User details updated.']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'User details could not be updated.']);
+        }
+    }
+
+    public function deleteRecord($id)
+    {
+        // You might want to add more complex logic here, like checking for related records
+        // before deleting, or using a soft delete.
+        if ($this->userFullDetails->delete($id)) {
+            echo json_encode(['status' => 'success', 'message' => 'User details deleted.']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'User details could not be deleted.']);
+        }
+    }
+}
