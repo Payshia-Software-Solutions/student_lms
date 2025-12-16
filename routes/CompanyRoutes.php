@@ -2,62 +2,39 @@
 
 require_once __DIR__ . '/../controllers/CompanyController.php';
 
-class CompanyRoutes
-{
-    private $companyController;
+$pdo = $GLOBALS['pdo'];
+$companyController = new CompanyController($pdo);
 
-    public function __construct($pdo)
-    {
-        $this->companyController = new CompanyController($pdo);
-    }
-
-    public function handleRequest($method, $endpoint)
-    {
-        switch ($method) {
-            case 'POST':
-                if ($endpoint === '/company/create') {
-                    $this->companyController->createRecord();
-                } else {
-                    $this->handleNotFound();
-                }
-                break;
-            case 'GET':
-                if ($endpoint === '/company/all') {
-                    $this->companyController->getAllRecords();
-                } 
-                // --- NEW ROUTE ---
-                else if ($endpoint === '/company') {
-                    $this->companyController->getCompanyById();
-                }
-                else {
-                    $this->handleNotFound();
-                }
-                break;
-            case 'PUT':
-                if (preg_match('/^\/company\/(\d+)\/update$/', $endpoint, $matches)) {
-                    $id = $matches[1];
-                    $this->companyController->updateRecord($id);
-                } else {
-                    $this->handleNotFound();
-                }
-                break;
-            case 'DELETE':
-                if (preg_match('/^\/company\/(\d+)\/delete$/', $endpoint, $matches)) {
-                    $id = $matches[1];
-                    $this->companyController->deleteRecord($id);
-                } else {
-                    $this->handleNotFound();
-                }
-                break;
-            default:
-                $this->handleNotFound();
-                break;
-        }
-    }
-
-    private function handleNotFound()
-    {
-        http_response_code(404);
-        echo json_encode(array("message" => "Endpoint not found."));
-    }
-}
+return [
+    // Get all companies
+    'GET /company/all' => [
+        'handler' => [$companyController, 'getAllRecords'],
+        'auth' => 'public'
+    ],
+    // Get a single company by ID
+    'GET /company/{id}' => [
+        'handler' => function ($params) use ($companyController) {
+            $companyController->getRecordById($params['id']);
+        },
+        'auth' => 'public'
+    ],
+    // Create a new company
+    'POST /company/create' => [
+        'handler' => [$companyController, 'createRecord'],
+        'auth' => 'private'
+    ],
+    // Update an existing company
+    'PUT /company/{id}/update' => [
+        'handler' => function ($params) use ($companyController) {
+            $companyController->updateRecord($params['id']);
+        },
+        'auth' => 'private'
+    ],
+    // Delete a company
+    'DELETE /company/{id}/delete' => [
+        'handler' => function ($params) use ($companyController) {
+            $companyController->deleteRecord($params['id']);
+        },
+        'auth' => 'private'
+    ],
+];
