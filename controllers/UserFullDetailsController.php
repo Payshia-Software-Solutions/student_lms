@@ -1,19 +1,19 @@
 <?php
 
 require_once __DIR__ . '/../models/UserFullDetails.php';
-require_once __DIR__ . '/../models/StudentPaymentCourse.php'; // Added dependency
+require_once __DIR__ . '/../models/StudentPaymentCourse.php';
 
 class UserFullDetailsController
 {
     private $userFullDetails;
-    private $studentPaymentCourse; // Added property
+    private $studentPaymentCourse;
     private $db;
 
     public function __construct($pdo)
     {
         $this->db = $pdo;
         $this->userFullDetails = new UserFullDetails($this->db);
-        $this->studentPaymentCourse = new StudentPaymentCourse($this->db); // Initialized model
+        $this->studentPaymentCourse = new StudentPaymentCourse($this->db);
     }
 
     public function getUserWithCourseDetails()
@@ -26,7 +26,8 @@ class UserFullDetailsController
 
         $student_number = $_GET['student_number'];
 
-        $user_data = $this->userFullDetails->read_single_by_student_number($student_number);
+        // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
+        $user_data = $this->userFullDetails->read_by_student_number($student_number);
 
         if (!$user_data) {
             http_response_code(404);
@@ -36,10 +37,9 @@ class UserFullDetailsController
 
         $user_data['courses'] = $this->userFullDetails->getStudentCoursesWithDetails($student_number);
 
-        // --- Start of new implementation: Get Payment Balance and History ---
-        foreach ($user_data['courses'] as &$course) { // Use reference to modify array directly
+        foreach ($user_data['courses'] as &$course) {
             if (isset($course['course_buckets']) && is_array($course['course_buckets'])) {
-                foreach ($course['course_buckets'] as &$bucket) { // Use reference here as well
+                foreach ($course['course_buckets'] as &$bucket) {
                     $bucket_id = $bucket['id'];
                     $bucket_price = (float)$bucket['course_bucket_price'];
 
@@ -57,24 +57,21 @@ class UserFullDetailsController
 
                     $balance = $bucket_price - $total_paid;
 
-                    // Inject the payment details and history into the bucket
                     $bucket['payment_details'] = [
                         'course_bucket_price' => $bucket_price,
                         'total_paid_amount' => $total_paid,
                         'balance' => $balance,
-                        'payments' => $payments ?: [] // Include the list of payments
+                        'payments' => $payments ?: []
                     ];
                 }
-                unset($bucket); // Unset reference to avoid side effects
+                unset($bucket);
             }
         }
-        unset($course); // Unset reference
-        // --- End of new implementation ---
+        unset($course);
 
         echo json_encode(['status' => 'success', 'data' => $user_data]);
     }
 
-    // ... (rest of the functions: createUser, updateUser, etc. remain unchanged)
     public function createUserAndDetails()
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -87,16 +84,11 @@ class UserFullDetailsController
 
         try {
             $this->db->beginTransaction();
-
-            // Create user
             $userId = $this->userFullDetails->createUser($data['user_data']);
-
-            // Create user details
             $this->userFullDetails->createUserDetails($userId, $data['user_details_data']);
-
             $this->db->commit();
 
-            $newUser = $this->userFullDetails->read_single_by_id($userId);
+            $newUser = $this->userFullDetails->read_single($userId); // Assumes read_single is the correct method by ID
 
             http_response_code(201);
             echo json_encode(['status' => 'success', 'message' => 'User and details created successfully', 'data' => $newUser]);
@@ -113,12 +105,11 @@ class UserFullDetailsController
 
         try {
             $this->db->beginTransaction();
-
             $this->userFullDetails->updateUserAndDetailsByStudentNumber($student_number, $data);
-
             $this->db->commit();
 
-            $updatedUser = $this->userFullDetails->read_single_by_student_number($student_number);
+            // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
+            $updatedUser = $this->userFullDetails->read_by_student_number($student_number);
             echo json_encode(['status' => 'success', 'message' => 'User and details updated successfully', 'data' => $updatedUser]);
 
         } catch (Exception $e) {
@@ -130,7 +121,8 @@ class UserFullDetailsController
 
     public function getRecordByStudentNumber($studentNumber)
     {
-        $record = $this->userFullDetails->read_single_by_student_number($studentNumber);
+        // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
+        $record = $this->userFullDetails->read_by_student_number($studentNumber);
         if ($record) {
             echo json_encode(['status' => 'success', 'data' => $record]);
         } else {
@@ -147,7 +139,7 @@ class UserFullDetailsController
 
     public function getRecordById($id)
     {
-        $record = $this->userFullDetails->read_single_by_id($id);
+        $record = $this->userFullDetails->read_single($id);
         if ($record) {
             echo json_encode(['status' => 'success', 'data' => $record]);
         } else {
@@ -169,8 +161,6 @@ class UserFullDetailsController
 
     public function deleteRecord($id)
     {
-        // You might want to add more complex logic here, like checking for related records
-        // before deleting, or using a soft delete.
         if ($this->userFullDetails->delete($id)) {
             echo json_encode(['status' => 'success', 'message' => 'User details deleted.']);
         } else {
