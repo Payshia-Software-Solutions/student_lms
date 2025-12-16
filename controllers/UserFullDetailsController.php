@@ -16,6 +16,83 @@ class UserFullDetailsController
         $this->studentPaymentCourse = new StudentPaymentCourse($this->db);
     }
 
+    // --- The new, self-contained function to get course details ---
+    private function getStudentCoursesWithDetails($student_number)
+    {
+        $query = "
+            SELECT 
+                c.id as course_id, c.course_name, c.description as course_description, c.image as course_image,
+                cb.id as course_bucket_id, cb.course_bucket_name, cb.course_bucket_price,
+                cc.id as course_content_id, cc.name as course_content_name, cc.type as course_content_type, cc.is_free,
+                scp.id as progress_id, scp.status as progress_status
+            FROM 
+                student_course sc
+            JOIN 
+                course c ON sc.course_id = c.id
+            LEFT JOIN 
+                course_bucket cb ON cb.course_id = c.id
+            LEFT JOIN 
+                course_content cc ON cc.course_bucket_id = cb.id
+            LEFT JOIN 
+                student_content_progress scp ON scp.course_content_id = cc.id AND scp.student_number = :student_number
+            WHERE 
+                sc.student_number = :student_number
+            ORDER BY
+                c.id, cb.id, cc.id;
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':student_number', $student_number);
+        $stmt->execute();
+
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $courses = [];
+
+        foreach ($results as $row) {
+            if (!$row['course_id']) continue;
+
+            if (!isset($courses[$row['course_id']])) {
+                $courses[$row['course_id']] = [
+                    'id' => $row['course_id'],
+                    'course_name' => $row['course_name'],
+                    'description' => $row['course_description'],
+                    'image' => $row['course_image'],
+                    'course_buckets' => []
+                ];
+            }
+
+            if ($row['course_bucket_id'] && !isset($courses[$row['course_id']]['course_buckets'][$row['course_bucket_id']])) {
+                $courses[$row['course_id']]['course_buckets'][$row['course_bucket_id']] = [
+                    'id' => $row['course_bucket_id'],
+                    'course_bucket_name' => $row['course_bucket_name'],
+                    'course_bucket_price' => $row['course_bucket_price'],
+                    'course_contents' => []
+                ];
+            }
+
+            if ($row['course_content_id']) {
+                $courses[$row['course_id']]['course_buckets'][$row['course_bucket_id']]['course_contents'][] = [
+                    'id' => $row['course_content_id'],
+                    'course_content_name' => $row['course_content_name'],
+                    'course_content_type' => $row['course_content_type'],
+                    'is_free' => $row['is_free'],
+                    'progress' => $row['progress_id'] ? [
+                        'id' => $row['progress_id'],
+                        'status' => $row['progress_status']
+                    ] : null
+                ];
+            }
+        }
+
+        return array_values(array_map(function($course) {
+            if (isset($course['course_buckets'])) {
+                $course['course_buckets'] = array_values($course['course_buckets']);
+            }
+            return $course;
+        }, $courses));
+    }
+
     public function getUserWithCourseDetails()
     {
         if (!isset($_GET['student_number'])) {
@@ -26,7 +103,6 @@ class UserFullDetailsController
 
         $student_number = $_GET['student_number'];
 
-        // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
         $user_data = $this->userFullDetails->read_by_student_number($student_number);
 
         if (!$user_data) {
@@ -35,7 +111,8 @@ class UserFullDetailsController
             return;
         }
 
-        $user_data['courses'] = $this->userFullDetails->getStudentCoursesWithDetails($student_number);
+        // --- FIX: Call the local function instead of the model's ---
+        $user_data['courses'] = $this->getStudentCoursesWithDetails($student_number);
 
         foreach ($user_data['courses'] as &$course) {
             if (isset($course['course_buckets']) && is_array($course['course_buckets'])) {
@@ -72,6 +149,7 @@ class UserFullDetailsController
         echo json_encode(['status' => 'success', 'data' => $user_data]);
     }
 
+    // ... (rest of the original functions are preserved) ...
     public function createUserAndDetails()
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -88,7 +166,7 @@ class UserFullDetailsController
             $this->userFullDetails->createUserDetails($userId, $data['user_details_data']);
             $this->db->commit();
 
-            $newUser = $this->userFullDetails->read_single($userId); // Assumes read_single is the correct method by ID
+            $newUser = $this->userFullDetails->read_single($userId); 
 
             http_response_code(201);
             echo json_encode(['status' => 'success', 'message' => 'User and details created successfully', 'data' => $newUser]);
@@ -108,7 +186,6 @@ class UserFullDetailsController
             $this->userFullDetails->updateUserAndDetailsByStudentNumber($student_number, $data);
             $this->db->commit();
 
-            // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
             $updatedUser = $this->userFullDetails->read_by_student_number($student_number);
             echo json_encode(['status' => 'success', 'message' => 'User and details updated successfully', 'data' => $updatedUser]);
 
@@ -121,7 +198,6 @@ class UserFullDetailsController
 
     public function getRecordByStudentNumber($studentNumber)
     {
-        // --- FIX: Corrected method name from read_single_by_student_number to read_by_student_number ---
         $record = $this->userFullDetails->read_by_student_number($studentNumber);
         if ($record) {
             echo json_encode(['status' => 'success', 'data' => $record]);
